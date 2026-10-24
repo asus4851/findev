@@ -1,0 +1,23 @@
+<form (submit)="apply($event)" novalidate>
+  @for (field of fields; track field.key) {
+    @let state = settingsForm[field.key]();
+    <div class="field">
+      <label [for]="field.key">{{ field.label }}</label>
+      <input [id]="field.key" type="number" step="1" [formField]="settingsForm[field.key]" />
+      @if (state.touched() && state.errors().length) {
+        <span class="error">{{ state.errors()[0].message }}</span>
+      } @else {
+        <span class="hint">{{ field.hint }}</span>
+      }
+    </div>
+  }
+
+  <p class="note">Changes take effect only after Apply. Apply starts a new run and clears the current values and totals.</p>
+
+  <div class="actions">
+    <button type="submit" class="primary" [disabled]="settingsForm().invalid()">Apply</button>
+    @if (applied()) {
+      <span class="applied" role="status">New run started.</span>
+    }
+  </div>
+</form>

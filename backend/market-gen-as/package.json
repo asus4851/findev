@@ -1,0 +1,15 @@
+{
+  "name": "market-gen-as",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "asc assembly/index.ts --target release",
+    "build:debug": "asc assembly/index.ts --target debug",
+    "test": "npm run build && vitest run"
+  },
+  "devDependencies": {
+    "assemblyscript": "^0.28.20",
+    "vitest": "^3.2.4"
+  }
+}

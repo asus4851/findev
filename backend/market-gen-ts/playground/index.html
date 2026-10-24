@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Market Simulator Playground</title>
+    <style>
+        :root {
+            --bg: #f6f7f9;
+            --panel: #ffffff;
+            --fg: #161b22;
+            --muted: #5d6673;
+            --line: #dde1e7;
+            --accent: #1f5fbf;
+            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+            color: var(--fg);
+            background: var(--bg);
+        }
+        body { margin: 0; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+        h1 { font-size: 18px; margin: 0; }
+        .note { color: var(--muted); font-size: 13px; margin: 0; }
+        .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px; }
+        form { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+        label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+        input, select { font: inherit; font-size: 14px; padding: 4px 6px; width: 110px; }
+        button { font: inherit; font-size: 14px; padding: 6px 14px; cursor: pointer; }
+        button.primary { background: var(--accent); color: #fff; border: 0; border-radius: 4px; }
+        #error { color: #b42318; font-size: 13px; min-height: 1em; margin: 0; }
+        #chart { height: 420px; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+        .stat { display: flex; flex-direction: column; gap: 2px; }
+        .stat span { font-size: 12px; color: var(--muted); }
+        .stat b { font-variant-numeric: tabular-nums; font-size: 16px; font-weight: 600; }
+        .legend { display: flex; gap: 16px; font-size: 12px; color: var(--muted); }
+        .legend i { display: inline-block; width: 12px; height: 3px; margin-right: 6px; vertical-align: middle; }
+    </style>
+</head>
+<body>
+    <h1>Market Simulator Playground</h1>
+    <p class="note">Локальна пісочниця для перегляду поведінки цін. Генератор працює у Wasm, зібраному з <code>../market-gen-as</code>. Не частина застосунку.</p>
+
+    <section class="panel">
+        <form id="config">
+            <label>Seed <input id="seed" type="number" value="42" /></label>
+            <label>Інструментів <input id="instrumentCount" type="number" value="5" /></label>
+            <label>Угод у батчі <input id="updatesPerBatch" type="number" value="100" /></label>
+            <label>Інтервал, мс <input id="batchIntervalMs" type="number" value="500" /></label>
+            <button class="primary" type="submit">Apply</button>
+            <button id="pause" type="button">Pause</button>
+            <label>Інструмент на графіку <select id="instrument"></select></label>
+        </form>
+        <p id="error"></p>
+    </section>
+
+    <section class="panel">
+        <div class="legend">
+            <span><i style="background:#d64545"></i>Ask</span>
+            <span><i style="background:#2e9e5b"></i>Bid</span>
+            <span><i style="background:#1f5fbf"></i>Ціна угоди</span>
+        </div>
+        <div id="chart"></div>
+    </section>
+
+    <section class="panel stats" id="stats"></section>
+
+    <script type="module" src="./main.ts"></script>
+</body>
+</html>

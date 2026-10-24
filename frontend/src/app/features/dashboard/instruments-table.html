@@ -1,0 +1,30 @@
+<div class="scroll">
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Instrument</th>
+        <th scope="col" class="num">Last price</th>
+        <th scope="col" class="num">Bid–ask spread</th>
+        <th scope="col" class="num">Volume</th>
+        <th scope="col" class="num">VWAP</th>
+        <th scope="col" class="num">Imbalance</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of rows(); track row.symbol) {
+        <tr>
+          <th scope="row">{{ row.symbol }}</th>
+          <td class="num">{{ row.lastPriceCents | centsCurrency }}</td>
+          <td class="num">{{ row.spreadCents | centsCurrency }}</td>
+          <td class="num">{{ row.volume | number }}</td>
+          <td class="num">{{ row.vwapCents | centsCurrency }}</td>
+          <td class="num">{{ row.imbalance | imbalance }}</td>
+        </tr>
+      } @empty {
+        <tr>
+          <td class="empty" colspan="6">Waiting for the market data…</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

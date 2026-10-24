@@ -1,0 +1,19 @@
+<section class="toolbar">
+  <div class="status">
+    <span class="badge" [attr.data-state]="producer.state()">{{ stateLabel() }}</span>
+    <span class="details">
+      {{ settings().instrumentCount }} instruments ·
+      {{ settings().updatesPerBatch | number }} updates every {{ settings().batchIntervalMs | number }} ms ·
+      {{ updatesPerSecond() | number: '1.0-0' }} updates/s
+    </span>
+  </div>
+  <button type="button" (click)="toggle()" [disabled]="!canToggle()">
+    {{ producer.state() === 'paused' ? 'Resume' : 'Pause' }}
+  </button>
+</section>
+
+@if (producer.error(); as error) {
+  <p class="error" role="alert">{{ error }}</p>
+}
+
+<app-instruments-table [rows]="producer.rows()" />

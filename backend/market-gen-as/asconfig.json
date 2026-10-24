@@ -1,0 +1,18 @@
+{
+  "targets": {
+    "release": {
+      "outFile": "build/market_gen.wasm",
+      "optimizeLevel": 3,
+      "shrinkLevel": 1,
+      "noAssert": true
+    },
+    "debug": {
+      "outFile": "build/market_gen.debug.wasm",
+      "debug": true
+    }
+  },
+  "options": {
+    "runtime": "incremental",
+    "use": ["abort="]
+  }
+}

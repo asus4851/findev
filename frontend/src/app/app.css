@@ -1,0 +1,52 @@
+header {
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.inner,
+main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+.inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding-block: 12px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 18px;
+}
+
+nav {
+  display: flex;
+  gap: 4px;
+}
+
+nav a {
+  padding: 6px 12px;
+  border-radius: 6px;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+nav a:hover {
+  color: var(--fg);
+}
+
+nav a.active {
+  background: var(--surface-muted);
+  color: var(--fg);
+  font-weight: 500;
+}
+
+main {
+  padding-block: 24px;
+}
