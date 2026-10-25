@@ -4,7 +4,9 @@
 //
 // Файл market_gen.wasm кладе поруч зі збіркою фронтенд (каталог wasm/), тому шлях
 // рахується відносно адреси самого воркера і працює з будь-яким base href.
+import { BehaviorSubject, Subject, asyncScheduler, switchMap, throttleTime } from 'rxjs';
 import type { FromWorkerMessage, SimulationSettings, ToWorkerMessage } from '../../contracts/protocol';
+import { REFRESH_DEFAULT_MS, REFRESH_UNLIMITED } from '../../contracts/refresh-rate';
 import { FIELDS, MarketData } from './market-data';
 
 // Функції, які експортує ../../market-gen-as/assembly/index.ts.
@@ -26,7 +28,7 @@ const INVALID_BATCH_INTERVAL_MS = 4;
 class MarketWorker {
     private readonly post: (message: FromWorkerMessage) => void;
 
-    // ── Стан ─────────────────────────────────────────────────────────
+    // ── Стан ────────────────────────────────────────────────────────
 
     private wasm: WasmExports | null = null;
     // Команди, що прийшли до завершення завантаження Wasm, виконуються після нього.
@@ -40,12 +42,29 @@ class MarketWorker {
     private data: MarketData | null = null;
     // Таймер генерації. null означає, що Wasm зупинено.
     private timer: ReturnType<typeof setInterval> | null = null;
+    // Є угоди, яких Angular ще не бачив у знімку.
+    private changed: boolean = false;
 
+    // Частота знімків для Angular. Не належить запуску: обрана частота діє і для наступних.
+    private readonly refreshMs$ = new BehaviorSubject<number>(REFRESH_DEFAULT_MS);
+    // Подія на кожен оброблений батч: за нею надсилається знімок.
+    private readonly batch$ = new Subject<void>();
+
+    // Кожен батч одразу йде в метрики, а знімок надсилається не частіше за refreshMs.
+    // leading: знімок іде одразу з першим батчем вікна; trailing: найсвіжіші угоди
+    // не застрягають, а йдуть наприкінці вікна. Без обмеження знімок іде після кожного батча.
     constructor(post: (message: FromWorkerMessage) => void) {
         this.post = post;
+        this.refreshMs$
+            .pipe(
+                switchMap((refreshMs) => refreshMs === REFRESH_UNLIMITED
+                    ? this.batch$
+                    : this.batch$.pipe(throttleTime(refreshMs, asyncScheduler, { leading: true, trailing: true }))),
+            )
+            .subscribe(() => this.flush());
     }
 
-    // ── Команди з Angular ────────────────────────────────────────────
+    // ── Команди з Angular ───────────────────────────────────────────
 
     handle(message: ToWorkerMessage): void {
         const wasm = this.wasm;
@@ -63,10 +82,16 @@ class MarketWorker {
                 this.start(wasm, message.runId, message.settings, message.seed);
                 break;
             case 'pause':
-                if (message.runId === this.runId) this.stop();
+                if (message.runId === this.runId) {
+                    this.flush();
+                    this.stop();
+                }
                 break;
             case 'resume':
                 if (message.runId === this.runId) this.run(wasm);
+                break;
+            case 'setRefresh':
+                this.setRefresh(message.refreshMs);
                 break;
             case 'dispose':
                 this.stop();
@@ -91,11 +116,11 @@ class MarketWorker {
 
         this.settings = settings;
         this.data = new MarketData(settings.instrumentCount);
-        this.post({ type: 'snapshot', runId, rows: this.data.snapshot() });
+        this.sendSnapshot();
         this.run(wasm);
     }
 
-    // ── Генерація ────────────────────────────────────────────────────
+    // ── Генерація ───────────────────────────────────────────────────
 
     // Запускає таймер: на кожен тік Wasm генерує один батч.
     private run(wasm: WasmExports): void {
@@ -112,17 +137,37 @@ class MarketWorker {
         this.post({ type: 'status', runId: this.runId, status: 'paused' });
     }
 
-    // Отримує батч від Wasm і віддає Angular свіжі метрики.
+    // Отримує батч від Wasm: усі угоди одразу потрапляють у метрики, незалежно від частоти знімків.
     // Int32Array лише дивиться в пам'ять Wasm, без копіювання.
     private tick(wasm: WasmExports): void {
         const pointer = wasm.nextBatch();
         if (pointer === 0 || this.settings === null || this.data === null) return;
 
         this.data.applyBatch(new Int32Array(wasm.memory.buffer, pointer, this.settings.updatesPerBatch * FIELDS));
+        this.changed = true;
+        this.batch$.next();
+    }
+
+    // ── Знімки для Angular ──────────────────────────────────────────
+
+    // Нова частота діє з наступного батча, без нового запуску. Генерацію і метрики не змінює.
+    private setRefresh(refreshMs: number): void {
+        if (!Number.isInteger(refreshMs) || refreshMs < 0) return;
+        this.refreshMs$.next(refreshMs);
+    }
+
+    // Надсилає знімок, лише якщо з минулого були нові угоди.
+    private flush(): void {
+        if (this.changed) this.sendSnapshot();
+    }
+
+    private sendSnapshot(): void {
+        if (this.data === null) return;
+        this.changed = false;
         this.post({ type: 'snapshot', runId: this.runId, rows: this.data.snapshot() });
     }
 
-    // ── Завантаження Wasm ────────────────────────────────────────────
+    // ── Завантаження Wasm ───────────────────────────────────────────
 
     // Після завантаження виконує команди, що чекали в черзі.
     // Якщо файл недоступний, повідомляє Angular про помилку запуску, який чекав.
@@ -166,7 +211,7 @@ function describeInitErrors(errors: number): string {
     return `Market generator rejected the settings: ${fields.join(', ')} out of range`;
 }
 
-// ── Точка входу ──────────────────────────────────────────────────────
+// ── Точка входу ─────────────────────────────────────────────────────
 
 const worker = new MarketWorker((message) => postMessage(message));
 

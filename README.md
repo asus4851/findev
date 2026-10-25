@@ -28,7 +28,7 @@ backend/                      імітація бекенду: усе, що пр
 ├── market-gen-ts/            еталонна TypeScript-версія генератора і пісочниця з графіком
 └── worker/                   Web Worker
     └── src/
-        ├── market.worker.ts  завантаження Wasm, таймер, команди, знімки
+        ├── market.worker.ts  завантаження Wasm, таймер, команди, знімки (rxjs обмежує частоту знімків)
         ├── market-data.ts    розбір батча і розрахунок п'яти метрик
         └── model/            накопичений стан одного інструмента
 
@@ -48,6 +48,7 @@ frontend/src/app/             Angular 22
 
 ```bash
 cd backend/market-gen-as && npm install
+cd ../worker && npm install
 cd ../../frontend && npm install
 npm start
 ```
@@ -82,7 +83,7 @@ cd frontend && npm run build
 
 Репозиторій уже на GitHub, тож найпростіше публікувати через GitHub Actions. Workflow лежить у [.github/workflows/deploy.yml](.github/workflows/deploy.yml). Він запускається при кожному push у `main`:
 
-1. встановлює залежності в `backend/market-gen-as` і `frontend` (`npm ci`);
+1. встановлює залежності в `backend/market-gen-as`, `backend/worker` і `frontend` (`npm ci`);
 2. збирає застосунок: `prebuild` компілює Wasm і копіює його в `public/wasm/`, потім `ng build`;
 3. підставляє `--base-href /<назва-репозиторію>/`, бо сайт на Pages живе не в корені домену;
 4. копіює `index.html` у `404.html`, щоб прямий перехід на `/settings` або перезавантаження сторінки не давали 404;
@@ -106,5 +107,5 @@ cd frontend && npm run build
 
 - **Порожня сторінка, у консолі 404 на `.js`:** base href не збігається з назвою репозиторію. Workflow бере її автоматично; якщо сайт під власним доменом, у кроці збірки заміни `/${{ github.event.repository.name }}/` на `/`.
 - **404 після перезавантаження на `/settings`:** перевір, що крок з `cp index.html 404.html` виконався.
-- **Збірка падає на `asc`:** не встановлено залежності в `backend/market-gen-as` (потрібен `npm ci` у цій папці до збірки фронтенду).
+- **Збірка падає на `asc` або не знаходить `rxjs`:** не встановлено залежності в `backend/market-gen-as` чи `backend/worker` (потрібен `npm ci` у цих папках до збірки фронтенду).
 - **Крок `deploy` падає з помилкою доступу:** у **Settings → Pages** джерелом має бути саме **GitHub Actions**, а не гілка.

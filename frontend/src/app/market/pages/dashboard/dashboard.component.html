@@ -7,10 +7,26 @@
       {{ updatesPerSecond() | number: '1.0-0' }} updates/s
     </span>
   </div>
-  <button type="button" (click)="toggle()" [disabled]="!canToggle()">
-    {{ session.state() === 'paused' ? 'Resume' : 'Pause' }}
-  </button>
+  <div class="controls">
+    <label class="refresh">
+      Table refresh
+      <select (change)="changeRefresh($event)">
+        @for (option of refreshOptions; track option.value) {
+          <option [value]="option.value" [selected]="option.value === session.refreshMs()">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+    <button type="button" (click)="toggle()" [disabled]="!canToggle()">
+      {{ session.state() === 'paused' ? 'Resume' : 'Pause' }}
+    </button>
+  </div>
 </section>
+
+@if (unlimitedRefresh()) {
+  <p class="perf-note" role="note">
+    Performance mode: the table re-renders after every generated batch. Use it only to test performance.
+  </p>
+}
 
 @if (session.error(); as error) {
   <p class="error" role="alert">{{ error }}</p>

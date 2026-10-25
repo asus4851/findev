@@ -1,5 +1,6 @@
 import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { REFRESH_OPTIONS_MS, REFRESH_UNLIMITED } from '@contracts/refresh-rate';
 import { DataTable, type TableColumn } from '../../components/data-table/data-table.component';
 import type { InstrumentMetrics } from '../../market-types';
 import { MarketSession, type SessionState } from '../../services/market-session.service';
@@ -27,6 +28,11 @@ const COLUMNS: TableColumn<InstrumentMetrics>[] = [
   { field: 'imbalance', header: 'Imbalance', pipe: imbalance, numeric: true },
 ];
 
+// Підпис варіанта частоти оновлення таблиці.
+function refreshLabel(refreshMs: number): string {
+  return refreshMs === REFRESH_UNLIMITED ? 'No limit (performance mode)' : `${refreshMs / 1000} s`;
+}
+
 @Component({
   selector: 'app-dashboard',
   imports: [DataTable, DecimalPipe],
@@ -38,14 +44,21 @@ export class Dashboard {
   protected readonly session = inject(MarketSession);
 
   protected readonly columns = COLUMNS;
+  protected readonly refreshOptions = REFRESH_OPTIONS_MS.map((value) => ({ value, label: refreshLabel(value) }));
   protected readonly settings = this.session.settings;
   protected readonly stateLabel = computed(() => STATE_LABELS[this.session.state()]);
   protected readonly canToggle = computed(() => this.session.state() === 'running' || this.session.state() === 'paused');
   protected readonly updatesPerSecond = computed(() =>
     (this.settings().updatesPerBatch * 1000) / this.settings().batchIntervalMs);
 
+  protected readonly unlimitedRefresh = computed(() => this.session.refreshMs() === REFRESH_UNLIMITED);
+
   protected toggle(): void {
     if (this.session.state() === 'paused') this.session.resume();
     else this.session.pause();
+  }
+
+  protected changeRefresh(event: Event): void {
+    this.session.setRefresh(Number((event.target as HTMLSelectElement).value));
   }
 }

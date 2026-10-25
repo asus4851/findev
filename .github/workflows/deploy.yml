@@ -28,11 +28,15 @@ jobs:
           cache: npm
           cache-dependency-path: |
             backend/market-gen-as/package-lock.json
+            backend/worker/package-lock.json
             frontend/package-lock.json
 
-      # Wasm збирається з AssemblyScript під час prebuild фронтенду, тому потрібні обидві залежності.
+      # Wasm збирається з AssemblyScript під час prebuild фронтенду, а воркер імпортує rxjs
+      # зі своєї папки, тому залежності потрібні в усіх трьох пакетах.
       - run: npm ci
         working-directory: backend/market-gen-as
+      - run: npm ci
+        working-directory: backend/worker
       - run: npm ci
         working-directory: frontend
 

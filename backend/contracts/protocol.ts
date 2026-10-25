@@ -23,6 +23,8 @@ export type ToWorkerMessage =
     | { type: 'start'; runId: number; settings: SimulationSettings; seed: number }
     | { type: 'pause'; runId: number }
     | { type: 'resume'; runId: number }
+    // Частота знімків, мс, або REFRESH_UNLIMITED. Не прив'язана до запуску: діє і для наступних.
+    | { type: 'setRefresh'; refreshMs: number }
     | { type: 'dispose' };
 
 // Повідомлення з воркера в Angular. Кожне несе runId запуску, до якого належить,

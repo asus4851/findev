@@ -1,5 +1,6 @@
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 import type { FromWorkerMessage, ToWorkerMessage } from '@contracts/protocol';
+import { REFRESH_DEFAULT_MS } from '@contracts/refresh-rate';
 import { MARKET_WORKER_FACTORY, type MarketWorker } from './market-worker';
 import { copySettings, defaultSettings, type InstrumentMetrics, type SimulationSettings } from '../market-types';
 
@@ -20,12 +21,15 @@ export class MarketSession {
   private readonly stateState = signal<SessionState>('starting');
   private readonly errorState = signal<string | undefined>(undefined);
   private readonly settingsState = signal<SimulationSettings>(defaultSettings());
+  private readonly refreshMsState = signal(REFRESH_DEFAULT_MS);
 
   readonly rows = this.rowsState.asReadonly();
   readonly state = this.stateState.asReadonly();
   readonly error = this.errorState.asReadonly();
   // Налаштування активного запуску. Форма редагує власну копію і не змінює їх до Apply.
   readonly settings = this.settingsState.asReadonly();
+  // Як часто воркер надсилає знімки таблиці. Налаштування клієнта: діє одразу, без нового запуску.
+  readonly refreshMs = this.refreshMsState.asReadonly();
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.destroy());
@@ -59,6 +63,13 @@ export class MarketSession {
     if (this.stateState() === 'paused') this.send({ type: 'resume', runId: this.runId });
   }
 
+  // Змінює частоту знімків. Генерацію і накопичені значення не зачіпає.
+  setRefresh(refreshMs: number): void {
+    if (refreshMs === this.refreshMsState()) return;
+    this.refreshMsState.set(refreshMs);
+    this.send({ type: 'setRefresh', refreshMs });
+  }
+
   private handle(message: FromWorkerMessage): void {
     if (message.runId !== this.runId) return;
 
@@ -83,6 +94,10 @@ export class MarketSession {
       worker.onmessage = (event) => this.handle(event.data as FromWorkerMessage);
       worker.onerror = (event) => this.fail(`Market worker failed: ${event.message || 'unknown error'}`);
       this.worker = worker;
+      // Воркер стартує з частотою за замовчуванням. Якщо її змінили раніше, повідомляємо одразу.
+      if (this.refreshMsState() !== REFRESH_DEFAULT_MS) {
+        this.send({ type: 'setRefresh', refreshMs: this.refreshMsState() });
+      }
       return worker;
     } catch (error) {
       this.fail(`Cannot start the market worker: ${error instanceof Error ? error.message : String(error)}`);
