@@ -41,7 +41,7 @@ export default tseslint.config(
       parser: tseslint.parser,
     },
   },
-  // Код вне доменов (app.config, app.routes, shared, testing): все домены только через index.ts.
+  // Код вне доменов (app.config, app.routes, testing): все домены только через index.ts.
   {
     files: ['src/**/*.ts'],
     ignores: DOMAINS.map((domain) => `src/app/domains/${domain}/**`),

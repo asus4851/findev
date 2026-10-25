@@ -1,7 +1,6 @@
 import { DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, PipeTransform, computed, inject } from '@angular/core';
 import { REFRESH_OPTIONS_MS, REFRESH_UNLIMITED } from '@backend/market';
-import { DataTableComponent, type TableColumn } from '../../../../shared/components/data-table/data-table.component';
 import type { InstrumentMetrics } from '../../market.model';
 import { MarketSessionService, type SessionState } from '../../services/market-session.service';
 import { CentsCurrencyPipe } from '../../utils/cents-currency.pipe';
@@ -18,8 +17,18 @@ const centsCurrency = new CentsCurrencyPipe();
 const imbalance = new ImbalancePipe();
 const integer = new DecimalPipe('en-US');
 
-// Колонки таблицы метрик: какое поле InstrumentMetrics, заголовок и формат отображения.
-const COLUMNS: TableColumn<InstrumentMetrics>[] = [
+// Колонка таблицы метрик: какое поле показать, какой заголовок и как отформатировать значение.
+interface Column {
+  field: keyof InstrumentMetrics;
+  header: string;
+  // Пайп для значения ячейки. Без него значение отображается как есть.
+  pipe?: PipeTransform;
+  // Числа выравниваются по правому краю.
+  numeric?: boolean;
+}
+
+// Колонки таблицы: первая колонка становится заголовком строки.
+const COLUMNS: Column[] = [
   { field: 'symbol', header: 'Instrument' },
   { field: 'lastPriceCents', header: 'Last price', pipe: centsCurrency, numeric: true },
   { field: 'spreadCents', header: 'Bid–ask spread', pipe: centsCurrency, numeric: true },
@@ -35,7 +44,7 @@ function refreshLabel(refreshMs: number): string {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [DataTableComponent, DecimalPipe],
+  imports: [DecimalPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
@@ -60,5 +69,10 @@ export class DashboardComponent {
 
   protected changeRefresh(event: Event): void {
     this.session.setRefresh(Number((event.target as HTMLSelectElement).value));
+  }
+
+  protected cell(row: InstrumentMetrics, column: Column): string {
+    const value = row[column.field];
+    return String(column.pipe ? column.pipe.transform(value) : value);
   }
 }

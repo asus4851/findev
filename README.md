@@ -61,7 +61,6 @@ backend/market/                  бэкенд-домен «рынок», пуб�
     └── utils/                   имена инструментов
 
 frontend/src/app/
-├── shared/components/           data-table: универсальная таблица
 └── domains/market/              фронтенд-домен «рынок», публичный API — index.ts
     ├── pages/                   dashboard, settings
     ├── services/                market-api (клиент бэкенда: воркер и postMessage), market-session (состояние запуска)

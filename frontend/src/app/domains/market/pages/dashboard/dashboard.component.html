@@ -32,9 +32,31 @@
   <p class="error" role="alert">{{ error }}</p>
 }
 
-<app-data-table
-  [columns]="columns"
-  [rows]="session.rows()"
-  rowKey="symbol"
-  emptyText="Waiting for the market data…"
-/>
+<div class="scroll">
+  <table>
+    <thead>
+      <tr>
+        @for (column of columns; track column.field) {
+          <th scope="col" [class.num]="column.numeric">{{ column.header }}</th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of session.rows(); track row.symbol) {
+        <tr>
+          @for (column of columns; track column.field; let first = $first) {
+            @if (first) {
+              <th scope="row">{{ cell(row, column) }}</th>
+            } @else {
+              <td [class.num]="column.numeric">{{ cell(row, column) }}</td>
+            }
+          }
+        </tr>
+      } @empty {
+        <tr>
+          <td class="empty" [attr.colspan]="columns.length">Waiting for the market data…</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
