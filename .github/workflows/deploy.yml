@@ -1,0 +1,60 @@
+name: Deploy to GitHub Pages
+
+# Кожен push у main збирає застосунок і публікує його на GitHub Pages.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Нова публікація скасовує попередню, яка ще не завершилась.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/market-gen-as/package-lock.json
+            frontend/package-lock.json
+
+      # Wasm збирається з AssemblyScript під час prebuild фронтенду, тому потрібні обидві залежності.
+      - run: npm ci
+        working-directory: backend/market-gen-as
+      - run: npm ci
+        working-directory: frontend
+
+      # На Pages сайт живе за адресою /<назва-репозиторію>/, тому base href береться з назви репозиторію.
+      - run: npm run build -- --base-href /${{ github.event.repository.name }}/
+        working-directory: frontend
+
+      # Pages не знає про маршрути Angular: для прямого переходу на /settings віддає 404.html,
+      # тож копія index.html змушує застосунок завантажитися і сам обробити адресу.
+      - run: cp index.html 404.html
+        working-directory: frontend/dist/frontend/browser
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist/frontend/browser
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
