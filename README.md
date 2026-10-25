@@ -34,12 +34,15 @@ backend/                      імітація бекенду: усе, що пр
 
 frontend/src/app/             Angular 22
 ├── app.component.*           оболонка з навігацією
-└── market/                   домен «ринок»
-    ├── pages/                dashboard, settings
-    ├── components/           data-table: універсальна таблиця (колонки передаються ззовні)
-    ├── services/             market-session (стан запуску), market-worker (токен воркера)
-    ├── utils/                пайпи формату ціни і дисбалансу
-    └── market-types.ts       типи метрик і налаштувань
+├── shared/
+│   └── components/           data-table: універсальна таблиця (колонки передаються ззовні)
+└── domains/
+    └── market/               домен «ринок»
+        ├── pages/            dashboard, settings
+        ├── services/         market-session: стан запуску
+        ├── tokens/           market-worker: токен для створення воркера
+        ├── utils/            пайпи формату ціни і дисбалансу
+        └── market-types.ts   типи метрик і налаштувань
 ```
 
 ## Запуск
@@ -73,8 +76,8 @@ cd frontend && npm run build
 | Сервіс зв'язку з воркером, сторінки, форматування | `frontend` | `cd frontend && npm test` |
 
 - **Метрики:** приклад з ТЗ ($102, $0.04, 40, $101.50, 0.20), нульові знаменники, ізоляція інструментів: `backend/worker/src/market-data.spec.ts`.
-- **Налаштування і скидання при Apply:** `backend/contracts/simulation-config.spec.ts`, `frontend/src/app/market/pages/settings/settings.component.spec.ts`, `frontend/src/app/market/services/market-session.service.spec.ts`.
-- **Pause/Resume і відкидання результатів попереднього запуску:** `frontend/src/app/market/services/market-session.service.spec.ts` (команди, `runId`), `frontend/src/app/market/pages/dashboard/dashboard.component.spec.ts` (кнопка і статус).
+- **Налаштування і скидання при Apply:** `backend/contracts/simulation-config.spec.ts`, `frontend/src/app/domains/market/pages/settings/settings.component.spec.ts`, `frontend/src/app/domains/market/services/market-session.service.spec.ts`.
+- **Pause/Resume і відкидання результатів попереднього запуску:** `frontend/src/app/domains/market/services/market-session.service.spec.ts` (команди, `runId`), `frontend/src/app/domains/market/pages/dashboard/dashboard.component.spec.ts` (кнопка і статус).
 - **Генератор:** `backend/market-gen-as/tests/generator.spec.ts` запускає скомпільований `.wasm`, `backend/market-gen-ts/src/*.spec.ts` перевіряє еталон.
 
 Тести не чекають реального часу: випадковість задається seed, воркер у тестах Angular підроблений.

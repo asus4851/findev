@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { FakeMarketWorker, metricsRow } from '../../../../testing/fake-market-worker';
+import { FakeMarketWorker, metricsRow } from '../../../../../testing/fake-market-worker';
 import { MarketSession } from '../../services/market-session.service';
-import { MARKET_WORKER_FACTORY } from '../../services/market-worker';
+import { MARKET_WORKER_FACTORY } from '../../tokens/market-worker.token';
 import { Dashboard } from './dashboard.component';
 
 describe('Dashboard', () => {

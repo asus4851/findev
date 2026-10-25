@@ -15,5 +15,5 @@ export type MarketWorkerFactory = () => MarketWorker;
 export const MARKET_WORKER_FACTORY = new InjectionToken<MarketWorkerFactory>('MARKET_WORKER_FACTORY', {
   providedIn: 'root',
   factory: () => () =>
-    new Worker(new URL('../../../../../backend/worker/src/market.worker', import.meta.url), { type: 'module' }),
+    new Worker(new URL('../../../../../../backend/worker/src/market.worker', import.meta.url), { type: 'module' }),
 });

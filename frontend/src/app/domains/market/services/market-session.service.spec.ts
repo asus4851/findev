@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
-import { FakeMarketWorker, metricsRow } from '../../../testing/fake-market-worker';
+import { FakeMarketWorker, metricsRow } from '../../../../testing/fake-market-worker';
 import { MarketSession } from './market-session.service';
-import { MARKET_WORKER_FACTORY } from './market-worker';
+import { MARKET_WORKER_FACTORY } from '../tokens/market-worker.token';
 
 const defaults = { instrumentCount: 5, updatesPerBatch: 100, batchIntervalMs: 500 };
 

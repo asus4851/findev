@@ -1,7 +1,7 @@
 import { ApplicationConfig, inject, provideAppInitializer, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
-import { MarketSession } from './market/services/market-session.service';
+import { MarketSession } from './domains/market/services/market-session.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
