@@ -5,12 +5,12 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     title: 'Dashboard · Realtime Market',
-    loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
+    loadComponent: () => import('./market/pages/dashboard/dashboard.component').then((m) => m.Dashboard),
   },
   {
     path: 'settings',
     title: 'Settings · Realtime Market',
-    loadComponent: () => import('./features/settings/settings').then((m) => m.Settings),
+    loadComponent: () => import('./market/pages/settings/settings.component').then((m) => m.Settings),
   },
   { path: '**', redirectTo: 'dashboard' },
 ];

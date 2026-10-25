@@ -1,12 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { FakeMarketWorker, metricsRow } from '../../../testing/fake-market-worker';
-import { MarketProducer } from '../../core/market/market-producer';
-import { MARKET_WORKER_FACTORY } from '../../core/market/market-worker';
-import { Settings } from './settings';
+import { FakeMarketWorker, metricsRow } from '../../../../testing/fake-market-worker';
+import { MarketSession } from '../../services/market-session.service';
+import { MARKET_WORKER_FACTORY } from '../../services/market-worker';
+import { Settings } from './settings.component';
 
 describe('Settings', () => {
   let worker: FakeMarketWorker;
-  let producer: MarketProducer;
+  let session: MarketSession;
   let fixture: ComponentFixture<Settings>;
   let element: HTMLElement;
 
@@ -32,8 +32,8 @@ describe('Settings', () => {
     TestBed.configureTestingModule({
       providers: [{ provide: MARKET_WORKER_FACTORY, useValue: () => worker }],
     });
-    producer = TestBed.inject(MarketProducer);
-    producer.start();
+    session = TestBed.inject(MarketSession);
+    session.start();
     fixture = TestBed.createComponent(Settings);
     element = fixture.nativeElement;
     await fixture.whenStable();
@@ -70,7 +70,7 @@ describe('Settings', () => {
   it('редагування не впливає на запуск до Apply', async () => {
     await type('instrumentCount', '12');
 
-    expect(producer.settings().instrumentCount).toBe(5);
+    expect(session.settings().instrumentCount).toBe(5);
     expect(worker.sent).toHaveLength(1);
   });
 
@@ -87,8 +87,8 @@ describe('Settings', () => {
       settings: { instrumentCount: 12, updatesPerBatch: 100, batchIntervalMs: 250 },
       seed: expect.any(Number),
     });
-    expect(producer.settings()).toEqual({ instrumentCount: 12, updatesPerBatch: 100, batchIntervalMs: 250 });
-    expect(producer.rows()).toEqual([]);
+    expect(session.settings()).toEqual({ instrumentCount: 12, updatesPerBatch: 100, batchIntervalMs: 250 });
+    expect(session.rows()).toEqual([]);
     expect(element.querySelector('[role="status"]')!.textContent).toContain('New run started');
   });
 

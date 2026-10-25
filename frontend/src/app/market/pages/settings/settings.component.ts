@@ -1,8 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormField, form, max, min, submit, validate, type SchemaPath } from '@angular/forms/signals';
-import type { SimulationSettings } from '@contracts/protocol';
-import { SIMULATION_LIMITS, type SimulationConfigField } from '@contracts/simulation-config';
-import { MarketProducer } from '../../core/market/market-producer';
+import { SIMULATION_LIMITS, type SimulationConfigField, type SimulationSettings } from '../../market-types';
+import { MarketSession } from '../../services/market-session.service';
 
 interface FieldInfo {
   key: SimulationConfigField;
@@ -30,17 +29,17 @@ function limited(path: SchemaPath<number>, field: SimulationConfigField): void {
   selector: 'app-settings',
   imports: [FormField],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  templateUrl: './settings.html',
-  styleUrl: './settings.css',
+  templateUrl: './settings.component.html',
+  styleUrl: './settings.component.css',
 })
 export class Settings {
-  private readonly producer = inject(MarketProducer);
+  private readonly session = inject(MarketSession);
 
   protected readonly fields = FIELDS;
   protected readonly applied = signal(false);
 
   // Власна копія налаштувань: редагування не впливає на запуск до Apply.
-  protected readonly model = signal<SimulationSettings>({ ...this.producer.settings() });
+  protected readonly model = signal<SimulationSettings>({ ...this.session.settings() });
 
   protected readonly settingsForm = form(this.model, (path) => {
     limited(path.instrumentCount, 'instrumentCount');
@@ -52,7 +51,7 @@ export class Settings {
     event.preventDefault();
     this.applied.set(false);
     void submit(this.settingsForm, async () => {
-      this.producer.apply(this.model());
+      this.session.apply(this.model());
       this.applied.set(true);
     });
   }

@@ -1,8 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { FakeMarketWorker, metricsRow } from '../../../testing/fake-market-worker';
-import { MarketProducer } from '../../core/market/market-producer';
-import { MARKET_WORKER_FACTORY } from '../../core/market/market-worker';
-import { Dashboard } from './dashboard';
+import { FakeMarketWorker, metricsRow } from '../../../../testing/fake-market-worker';
+import { MarketSession } from '../../services/market-session.service';
+import { MARKET_WORKER_FACTORY } from '../../services/market-worker';
+import { Dashboard } from './dashboard.component';
 
 describe('Dashboard', () => {
   let worker: FakeMarketWorker;
@@ -19,7 +19,7 @@ describe('Dashboard', () => {
     TestBed.configureTestingModule({
       providers: [{ provide: MARKET_WORKER_FACTORY, useValue: () => worker }],
     });
-    TestBed.inject(MarketProducer).start();
+    TestBed.inject(MarketSession).start();
     fixture = TestBed.createComponent(Dashboard);
     element = fixture.nativeElement;
     await fixture.whenStable();

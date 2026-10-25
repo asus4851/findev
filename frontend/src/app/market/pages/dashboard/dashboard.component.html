@@ -1,6 +1,6 @@
 <section class="toolbar">
   <div class="status">
-    <span class="badge" [attr.data-state]="producer.state()">{{ stateLabel() }}</span>
+    <span class="badge" [attr.data-state]="session.state()">{{ stateLabel() }}</span>
     <span class="details">
       {{ settings().instrumentCount }} instruments ·
       {{ settings().updatesPerBatch | number }} updates every {{ settings().batchIntervalMs | number }} ms ·
@@ -8,12 +8,17 @@
     </span>
   </div>
   <button type="button" (click)="toggle()" [disabled]="!canToggle()">
-    {{ producer.state() === 'paused' ? 'Resume' : 'Pause' }}
+    {{ session.state() === 'paused' ? 'Resume' : 'Pause' }}
   </button>
 </section>
 
-@if (producer.error(); as error) {
+@if (session.error(); as error) {
   <p class="error" role="alert">{{ error }}</p>
 }
 
-<app-instruments-table [rows]="producer.rows()" />
+<app-data-table
+  [columns]="columns"
+  [rows]="session.rows()"
+  rowKey="symbol"
+  emptyText="Waiting for the market data…"
+/>

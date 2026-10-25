@@ -1,20 +1,15 @@
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
-import type {
-  FromWorkerMessage,
-  InstrumentMetrics,
-  SimulationSettings,
-  ToWorkerMessage,
-} from '@contracts/protocol';
-import { SimulationConfig } from '@contracts/simulation-config';
+import type { FromWorkerMessage, ToWorkerMessage } from '@contracts/protocol';
 import { MARKET_WORKER_FACTORY, type MarketWorker } from './market-worker';
+import { copySettings, defaultSettings, type InstrumentMetrics, type SimulationSettings } from '../market-types';
 
 // starting: запуск відправлено, даних ще немає; error: запуск не вдався.
-export type ProducerState = 'starting' | 'running' | 'paused' | 'error';
+export type SessionState = 'starting' | 'running' | 'paused' | 'error';
 
-// Єдиний на застосунок зв'язок з воркером "бекенду".
+// Єдиний на застосунок зв'язок з воркером і стан активного запуску для обох сторінок.
 // Живе в корені, тому навігація між сторінками не створює нових воркерів і не зупиняє запуск.
 @Injectable({ providedIn: 'root' })
-export class MarketProducer {
+export class MarketSession {
   private readonly createWorker = inject(MARKET_WORKER_FACTORY);
   private worker: MarketWorker | undefined;
 
@@ -22,9 +17,9 @@ export class MarketProducer {
   private runId = 0;
 
   private readonly rowsState = signal<InstrumentMetrics[]>([]);
-  private readonly stateState = signal<ProducerState>('starting');
+  private readonly stateState = signal<SessionState>('starting');
   private readonly errorState = signal<string | undefined>(undefined);
-  private readonly settingsState = signal<SimulationSettings>(toSettings(new SimulationConfig()));
+  private readonly settingsState = signal<SimulationSettings>(defaultSettings());
 
   readonly rows = this.rowsState.asReadonly();
   readonly state = this.stateState.asReadonly();
@@ -49,7 +44,7 @@ export class MarketProducer {
     if (!worker) return;
 
     this.runId++;
-    this.settingsState.set(toSettings(settings));
+    this.settingsState.set(copySettings(settings));
     this.rowsState.set([]);
     this.errorState.set(undefined);
     this.stateState.set('starting');
@@ -75,12 +70,12 @@ export class MarketProducer {
         this.stateState.set(message.status);
         break;
       case 'error':
-        this.errorState.set(message.message);
-        this.stateState.set('error');
+        this.fail(message.message);
         break;
     }
   }
 
+  // Воркер створюється при першому запуску і далі використовується повторно.
   private ensureWorker(): MarketWorker | undefined {
     if (this.worker) return this.worker;
     try {
@@ -110,10 +105,6 @@ export class MarketProducer {
     this.worker?.terminate();
     this.worker = undefined;
   }
-}
-
-function toSettings({ instrumentCount, updatesPerBatch, batchIntervalMs }: SimulationSettings): SimulationSettings {
-  return { instrumentCount, updatesPerBatch, batchIntervalMs };
 }
 
 function randomSeed(): number {

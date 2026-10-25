@@ -1,5 +1,5 @@
-import { formatCents } from './cents-currency';
-import { formatImbalance } from './imbalance';
+import { formatCents } from './cents-currency.pipe';
+import { formatImbalance } from './imbalance.pipe';
 
 describe('formatCents', () => {
   it('показує ціну в центах як долари', () => {

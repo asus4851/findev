@@ -1,5 +1,5 @@
 import type { FromWorkerMessage, InstrumentMetrics, ToWorkerMessage } from '@contracts/protocol';
-import type { MarketWorker } from '../app/core/market/market-worker';
+import type { MarketWorker } from '../app/market/services/market-worker';
 
 // Підробний воркер: запам'ятовує команди і дозволяє тесту надсилати відповіді "бекенду".
 export class FakeMarketWorker implements MarketWorker {
