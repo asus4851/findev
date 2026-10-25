@@ -11,12 +11,12 @@ export class SimulationConfig {
 // Допустимые границы из ТЗ, включительно.
 // Отличие от TypeScript: там границы собраны в объект SIMULATION_LIMITS,
 // а в AssemblyScript нет таких объектов-литералов, поэтому здесь отдельные константы.
-export const INSTRUMENT_COUNT_MIN: i32 = 1;
-export const INSTRUMENT_COUNT_MAX: i32 = 50;
-export const UPDATES_PER_BATCH_MIN: i32 = 1;
+const INSTRUMENT_COUNT_MIN: i32 = 1;
+const INSTRUMENT_COUNT_MAX: i32 = 50;
+const UPDATES_PER_BATCH_MIN: i32 = 1;
 export const UPDATES_PER_BATCH_MAX: i32 = 1000;
-export const BATCH_INTERVAL_MS_MIN: i32 = 50;
-export const BATCH_INTERVAL_MS_MAX: i32 = 2000;
+const BATCH_INTERVAL_MS_MIN: i32 = 50;
+const BATCH_INTERVAL_MS_MAX: i32 = 2000;
 
 // Биты результата проверки: каждое некорректное поле включает свой бит.
 export const INVALID_INSTRUMENT_COUNT: i32 = 1;

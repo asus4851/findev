@@ -5,6 +5,6 @@
 // Страницы сюда не экспортируются: их подключают маршруты, чтобы они оставались ленивыми.
 
 export { MARKET_ROUTES } from './market.routes';
-export { MarketSessionService, type SessionState } from './services/market-session.service';
-export { MARKET_WORKER_FACTORY, type MarketWorker, type MarketWorkerFactory } from './tokens/market-worker.token';
-export type { InstrumentMetrics, SimulationSettings } from './market.model';
+export { MarketSessionService } from './services/market-session.service';
+// Тип воркера нужен тестовому помощнику вне домена (testing/fake-market-worker).
+export type { MarketWorker } from './tokens/market-worker.token';

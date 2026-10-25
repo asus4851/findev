@@ -2,6 +2,7 @@
 //
 // Внешние потребители (Angular) импортируют только отсюда, через алиас @backend/market:
 // типы метрик и настроек, границы ТЗ, протокол сообщений воркера, частоты снимков.
+// Проверка настроек (validateSimulationConfig) сюда не входит: она нужна только эталонному генератору и тестам.
 // Модули внутри домена (воркер, генераторы) импортируют друг друга напрямую, не через этот файл.
 //
 // Сам воркер сюда не экспортируется: Angular собирает его отдельным бандлом по шаблону
@@ -10,18 +11,12 @@
 
 // ── Настройки запуска ────────────────────────────────────────────────
 
-export { SIMULATION_LIMITS, SimulationConfig, validateSimulationConfig } from './contracts/simulation-config';
-export type { SimulationConfigError, SimulationConfigField } from './contracts/simulation-config';
+export { SIMULATION_LIMITS, SimulationConfig } from './contracts/simulation-config';
+export type { SimulationConfigField } from './contracts/simulation-config';
 
 // ── Протокол воркера ─────────────────────────────────────────────────
 
-export type {
-    FromWorkerMessage,
-    InstrumentMetrics,
-    ProducerStatus,
-    SimulationSettings,
-    ToWorkerMessage,
-} from './contracts/protocol';
+export type { FromWorkerMessage, InstrumentMetrics, SimulationSettings, ToWorkerMessage } from './contracts/protocol';
 
 // ── Частота снимков ──────────────────────────────────────────────────
 
