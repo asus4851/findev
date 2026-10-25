@@ -1,8 +1,8 @@
 import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { REFRESH_OPTIONS_MS, REFRESH_UNLIMITED } from '@contracts/refresh-rate';
+import { REFRESH_OPTIONS_MS, REFRESH_UNLIMITED } from '@backend/market';
 import { DataTable, type TableColumn } from '../../../../shared/components/data-table/data-table.component';
-import type { InstrumentMetrics } from '../../market-types';
+import type { InstrumentMetrics } from '../../market.model';
 import { MarketSession, type SessionState } from '../../services/market-session.service';
 import { CentsCurrency } from '../../utils/cents-currency.pipe';
 import { Imbalance } from '../../utils/imbalance.pipe';

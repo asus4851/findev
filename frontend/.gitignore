@@ -43,5 +43,5 @@ __screenshots__/
 .DS_Store
 Thumbs.db
 
-# Wasm-генератор, який копіюється з ../backend/market-gen-as перед збіркою
+# Wasm-генератор, який копіюється з ../backend/market/market-gen-as перед збіркою
 /public/wasm/

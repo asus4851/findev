@@ -1,6 +1,7 @@
 name: Deploy to GitHub Pages
 
-# Кожен push у main збирає застосунок і публікує його на GitHub Pages.
+# Кожен push у main перевіряє код (лінт, тести), збирає застосунок і публікує його на GitHub Pages.
+# Якщо лінт або хоч один тест падає, деплой не відбувається.
 on:
   push:
     branches: [main]
@@ -27,17 +28,38 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: |
-            backend/market-gen-as/package-lock.json
-            backend/worker/package-lock.json
+            backend/market/market-gen-as/package-lock.json
+            backend/market/market-gen-ts/package-lock.json
+            backend/market/worker/package-lock.json
             frontend/package-lock.json
 
       # Wasm збирається з AssemblyScript під час prebuild фронтенду, а воркер імпортує rxjs
-      # зі своєї папки, тому залежності потрібні в усіх трьох пакетах.
+      # зі своєї папки, тому залежності потрібні в кожному пакеті.
       - run: npm ci
-        working-directory: backend/market-gen-as
+        working-directory: backend/market/market-gen-as
       - run: npm ci
-        working-directory: backend/worker
+        working-directory: backend/market/market-gen-ts
       - run: npm ci
+        working-directory: backend/market/worker
+      - run: npm ci
+        working-directory: frontend
+
+      # Межі доменів: імпорт лише через публічні index.ts.
+      - name: Lint
+        run: npm run lint
+        working-directory: frontend
+
+      - name: Test Wasm generator
+        run: npm test
+        working-directory: backend/market/market-gen-as
+      - name: Test TypeScript generator
+        run: npm test
+        working-directory: backend/market/market-gen-ts
+      - name: Test worker and contracts
+        run: npm test
+        working-directory: backend/market/worker
+      - name: Test Angular
+        run: npm test -- --watch=false
         working-directory: frontend
 
       # На Pages сайт живе за адресою /<назва-репозиторію>/, тому base href береться з назви репозиторію.

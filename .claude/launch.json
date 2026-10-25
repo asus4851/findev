@@ -5,8 +5,8 @@
       "name": "market-playground",
       "runtimeExecutable": "node",
       "runtimeArgs": [
-        "backend/market-gen-ts/node_modules/vite/bin/vite.js",
-        "backend/market-gen-ts",
+        "backend/market/market-gen-ts/node_modules/vite/bin/vite.js",
+        "backend/market/market-gen-ts",
         "--port",
         "5173",
         "--strictPort"

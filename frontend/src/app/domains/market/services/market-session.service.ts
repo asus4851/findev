@@ -1,8 +1,7 @@
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
-import type { FromWorkerMessage, ToWorkerMessage } from '@contracts/protocol';
-import { REFRESH_DEFAULT_MS } from '@contracts/refresh-rate';
+import { REFRESH_DEFAULT_MS, type FromWorkerMessage, type ToWorkerMessage } from '@backend/market';
 import { MARKET_WORKER_FACTORY, type MarketWorker } from '../tokens/market-worker.token';
-import { copySettings, defaultSettings, type InstrumentMetrics, type SimulationSettings } from '../market-types';
+import { copySettings, defaultSettings, type InstrumentMetrics, type SimulationSettings } from '../market.model';
 
 // starting: запуск відправлено, даних ще немає; error: запуск не вдався.
 export type SessionState = 'starting' | 'running' | 'paused' | 'error';

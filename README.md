@@ -22,15 +22,18 @@ Wasm (імітує біржу)  →  Web Worker (агрегує метрики) 
 ## Структура
 
 ```
-backend/                      імітація бекенду: усе, що працює поза Angular
-├── contracts/                спільний контракт: налаштування з межами ТЗ і формат повідомлень
-├── market-gen-as/            генератор на AssemblyScript → build/market_gen.wasm
-├── market-gen-ts/            еталонна TypeScript-версія генератора і пісочниця з графіком
-└── worker/                   Web Worker
+backend/market/                   бекенд-домен «ринок»: усе, що працює поза Angular
+├── index.ts                      публічний API домену: типи, межі налаштувань, протокол, частоти знімків
+├── contracts/                    спільний контракт: налаштування з межами ТЗ і формат повідомлень
+├── market-gen-as/                генератор на AssemblyScript → build/market_gen.wasm
+├── market-gen-ts/                еталонна TypeScript-версія генератора і пісочниця з графіком
+└── worker/                       Web Worker
     └── src/
-        ├── market.worker.ts  завантаження Wasm, таймер, команди, знімки (rxjs обмежує частоту знімків)
-        ├── market-data.ts    розбір батча і розрахунок п'яти метрик
-        └── model/            накопичений стан одного інструмента
+        ├── market.worker.ts      точка входу: створює MarketSimulation і завантажує Wasm
+        ├── market-simulation.ts  керування: команди, таймер генерації, частота знімків (rxjs)
+        ├── wasm/                 межа з Wasm: інтерфейс і завантаження, формат буфера, біти помилок init
+        ├── metrics/              розрахунок п'яти метрик: MarketData (батч), InstrumentStats (один інструмент)
+        └── utils/                назви інструментів
 
 frontend/src/app/             Angular 22
 ├── app.component.*           оболонка з навігацією
@@ -38,11 +41,13 @@ frontend/src/app/             Angular 22
 │   └── components/           data-table: універсальна таблиця (колонки передаються ззовні)
 └── domains/
     └── market/               домен «ринок»
+        ├── index.ts          публічний API домену: маршрути, сесія, токен воркера, типи
+        ├── market.routes.ts  ліниві маршрути сторінок домену
         ├── pages/            dashboard, settings
         ├── services/         market-session: стан запуску
         ├── tokens/           market-worker: токен для створення воркера
         ├── utils/            пайпи формату ціни і дисбалансу
-        └── market-types.ts   типи метрик і налаштувань
+        └── market.model.ts   модель: метрики і налаштування (типи, межі, значення за замовчуванням)
 ```
 
 ## Запуск
@@ -50,9 +55,9 @@ frontend/src/app/             Angular 22
 Потрібен Node.js 22 або новіший.
 
 ```bash
-cd backend/market-gen-as && npm install
+cd backend/market/market-gen-as && npm install
 cd ../worker && npm install
-cd ../../frontend && npm install
+cd ../../../frontend && npm install
 npm start
 ```
 
@@ -66,19 +71,38 @@ cd frontend && npm run build
 
 Результат лежить у `frontend/dist/frontend/browser`.
 
+## Межі доменів
+
+Кожен домен відкриває назовні лише свій публічний API — файл `index.ts`. Усередині домену файли імпортують один одного напряму.
+
+| Домен | Публічний API | Як імпортувати ззовні |
+|---|---|---|
+| Бекенд «ринок» | `backend/market/index.ts` | `@backend/market` (аліас у `frontend/tsconfig.json`) |
+| Фронтенд «ринок» | `frontend/src/app/domains/market/index.ts` | `./domains/market` (папка домену, без глибших шляхів) |
+
+Фронтенд-домен експортує `MARKET_ROUTES` (сторінки завантажуються ліниво), `MarketSession`, токен воркера і типи. Сторінки й компоненти назовні не експортуються.
+
+Порушення меж ловить ESLint (`frontend/eslint.config.mjs`): імпорт на кшталт `@backend/market/contracts/protocol` чи `./domains/market/services/...` поза доменом дає помилку. Новий фронтенд-домен достатньо дописати в список `DOMAINS` у цьому файлі.
+
+```bash
+cd frontend && npm run lint
+```
+
+Воркер не імпортується, а підключається за адресою `new Worker(new URL(...))` у `market-worker.token.ts`. Динамічний `import()` правило не перевіряє.
+
 ## Тести
 
 | Що перевіряється | Де | Команда |
 |---|---|---|
-| Метрики, налаштування і їх межі | `backend/worker`, `backend/contracts` | `cd backend/worker && npm install && npm test` |
-| Генератор у скомпільованому Wasm, паритет з еталоном | `backend/market-gen-as` | `cd backend/market-gen-as && npm test` |
-| Еталонний генератор | `backend/market-gen-ts` | `cd backend/market-gen-ts && npm install && npm test` |
+| Метрики, керування воркером, налаштування і їх межі | `backend/market/worker`, `backend/market/contracts` | `cd backend/market/worker && npm install && npm test` |
+| Генератор у скомпільованому Wasm, паритет з еталоном | `backend/market/market-gen-as` | `cd backend/market/market-gen-as && npm test` |
+| Еталонний генератор | `backend/market/market-gen-ts` | `cd backend/market/market-gen-ts && npm install && npm test` |
 | Сервіс зв'язку з воркером, сторінки, форматування | `frontend` | `cd frontend && npm test` |
 
-- **Метрики:** приклад з ТЗ ($102, $0.04, 40, $101.50, 0.20), нульові знаменники, ізоляція інструментів: `backend/worker/src/market-data.spec.ts`.
-- **Налаштування і скидання при Apply:** `backend/contracts/simulation-config.spec.ts`, `frontend/src/app/domains/market/pages/settings/settings.component.spec.ts`, `frontend/src/app/domains/market/services/market-session.service.spec.ts`.
-- **Pause/Resume і відкидання результатів попереднього запуску:** `frontend/src/app/domains/market/services/market-session.service.spec.ts` (команди, `runId`), `frontend/src/app/domains/market/pages/dashboard/dashboard.component.spec.ts` (кнопка і статус).
-- **Генератор:** `backend/market-gen-as/tests/generator.spec.ts` запускає скомпільований `.wasm`, `backend/market-gen-ts/src/*.spec.ts` перевіряє еталон.
+- **Метрики:** приклад з ТЗ ($102, $0.04, 40, $101.50, 0.20), нульові знаменники, ізоляція інструментів: `backend/market/worker/src/metrics/instrument-stats.spec.ts`, `backend/market/worker/src/metrics/market-data.spec.ts`.
+- **Налаштування і скидання при Apply:** `backend/market/contracts/simulation-config.spec.ts`, `frontend/src/app/domains/market/pages/settings/settings.component.spec.ts`, `frontend/src/app/domains/market/services/market-session.service.spec.ts`.
+- **Pause/Resume і відкидання результатів попереднього запуску:** `backend/market/worker/src/market-simulation.spec.ts` (пауза зупиняє генерацію, Resume не догенеровує час паузи, новий запуск, команди старого `runId`, помилки, частота знімків), `frontend/src/app/domains/market/services/market-session.service.spec.ts` (команди, `runId`), `frontend/src/app/domains/market/pages/dashboard/dashboard.component.spec.ts` (кнопка і статус).
+- **Генератор:** `backend/market/market-gen-as/tests/generator.spec.ts` запускає скомпільований `.wasm`, `backend/market/market-gen-ts/src/*.spec.ts` перевіряє еталон.
 
 Тести не чекають реального часу: випадковість задається seed, воркер у тестах Angular підроблений.
 
@@ -86,11 +110,12 @@ cd frontend && npm run build
 
 Репозиторій уже на GitHub, тож найпростіше публікувати через GitHub Actions. Workflow лежить у [.github/workflows/deploy.yml](.github/workflows/deploy.yml). Він запускається при кожному push у `main`:
 
-1. встановлює залежності в `backend/market-gen-as`, `backend/worker` і `frontend` (`npm ci`);
-2. збирає застосунок: `prebuild` компілює Wasm і копіює його в `public/wasm/`, потім `ng build`;
-3. підставляє `--base-href /<назва-репозиторію>/`, бо сайт на Pages живе не в корені домену;
-4. копіює `index.html` у `404.html`, щоб прямий перехід на `/settings` або перезавантаження сторінки не давали 404;
-5. публікує `frontend/dist/frontend/browser`.
+1. встановлює залежності в `backend/market/market-gen-as`, `backend/market/market-gen-ts`, `backend/market/worker` і `frontend` (`npm ci`);
+2. перевіряє межі доменів (`npm run lint`) і запускає всі чотири набори тестів; якщо щось падає, деплой не відбувається;
+3. збирає застосунок: `prebuild` компілює Wasm і копіює його в `public/wasm/`, потім `ng build`;
+4. підставляє `--base-href /<назва-репозиторію>/`, бо сайт на Pages живе не в корені домену;
+5. копіює `index.html` у `404.html`, щоб прямий перехід на `/settings` або перезавантаження сторінки не давали 404;
+6. публікує `frontend/dist/frontend/browser`.
 
 ### Одноразове налаштування
 
@@ -110,5 +135,5 @@ cd frontend && npm run build
 
 - **Порожня сторінка, у консолі 404 на `.js`:** base href не збігається з назвою репозиторію. Workflow бере її автоматично; якщо сайт під власним доменом, у кроці збірки заміни `/${{ github.event.repository.name }}/` на `/`.
 - **404 після перезавантаження на `/settings`:** перевір, що крок з `cp index.html 404.html` виконався.
-- **Збірка падає на `asc` або не знаходить `rxjs`:** не встановлено залежності в `backend/market-gen-as` чи `backend/worker` (потрібен `npm ci` у цих папках до збірки фронтенду).
+- **Збірка падає на `asc` або не знаходить `rxjs`:** не встановлено залежності в `backend/market/market-gen-as` чи `backend/market/worker` (потрібен `npm ci` у цих папках до збірки фронтенду).
 - **Крок `deploy` падає з помилкою доступу:** у **Settings → Pages** джерелом має бути саме **GitHub Actions**, а не гілка.

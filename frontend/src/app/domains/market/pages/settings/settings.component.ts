@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormField, form, max, min, submit, validate, type SchemaPath } from '@angular/forms/signals';
-import { SIMULATION_LIMITS, type SimulationConfigField, type SimulationSettings } from '../../market-types';
+import { SIMULATION_LIMITS, type SimulationConfigField, type SimulationSettings } from '../../market.model';
 import { MarketSession } from '../../services/market-session.service';
 
 interface FieldInfo {

@@ -1,16 +1,8 @@
 import { Routes } from '@angular/router';
+import { MARKET_ROUTES } from './domains/market';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
-  {
-    path: 'dashboard',
-    title: 'Dashboard · Realtime Market',
-    loadComponent: () => import('./domains/market/pages/dashboard/dashboard.component').then((m) => m.Dashboard),
-  },
-  {
-    path: 'settings',
-    title: 'Settings · Realtime Market',
-    loadComponent: () => import('./domains/market/pages/settings/settings.component').then((m) => m.Settings),
-  },
+  ...MARKET_ROUTES,
   { path: '**', redirectTo: 'dashboard' },
 ];

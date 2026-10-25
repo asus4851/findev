@@ -12,8 +12,8 @@
     "target": "ES2022",
     "module": "preserve",
     "paths": {
-      "@contracts/*": [
-        "../backend/contracts/*"
+      "@backend/market": [
+        "../backend/market/index.ts"
       ]
     }
   },

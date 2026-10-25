@@ -8,10 +8,10 @@
     "types": []
   },
   "include": [
-    "../backend/worker/src/**/*.ts",
-    "../backend/contracts/**/*.ts"
+    "../backend/market/worker/src/**/*.ts",
+    "../backend/market/contracts/**/*.ts"
   ],
   "exclude": [
-    "../backend/**/*.spec.ts"
+    "../backend/market/**/*.spec.ts"
   ]
 }

@@ -1,31 +1,17 @@
-/// <reference lib="webworker" />
-// Найпростіший воркер: запускає і зупиняє Wasm-генератор і отримує від нього дані.
+// Логіка воркера: запускає і зупиняє Wasm-генератор, отримує від нього батчі і надсилає знімки.
 // Метрики рахує MarketData, тут лише керування: завантаження Wasm, таймер, команди.
 //
-// Файл market_gen.wasm кладе поруч зі збіркою фронтенд (каталог wasm/), тому шлях
-// рахується відносно адреси самого воркера і працює з будь-яким base href.
+// Клас не залежить від глобального об'єкта воркера: повідомлення віддає через post,
+// а Wasm отримує через функцію завантаження. Тому в тестах його створюють з підробками.
 import { BehaviorSubject, Subject, asyncScheduler, switchMap, throttleTime } from 'rxjs';
 import type { FromWorkerMessage, SimulationSettings, ToWorkerMessage } from '../../contracts/protocol';
 import { REFRESH_DEFAULT_MS, REFRESH_UNLIMITED } from '../../contracts/refresh-rate';
-import { FIELDS, MarketData } from './market-data';
+import { MarketData } from './metrics/market-data';
+import { FIELDS } from './wasm/buffer-format';
+import { describeInitErrors } from './wasm/init-errors';
+import type { WasmExports } from './wasm/wasm-exports';
 
-// Функції, які експортує ../../market-gen-as/assembly/index.ts.
-interface WasmExports {
-    memory: WebAssembly.Memory;
-    FIELDS: WebAssembly.Global;
-    init(instrumentCount: number, updatesPerBatch: number, batchIntervalMs: number, seed: number): number;
-    // Вказівник на буфер батча або 0. Буфер дійсний до наступного виклику.
-    nextBatch(): number;
-    dispose(): void;
-}
-
-// Дзеркало бітів з ../../market-gen-as/assembly/config/simulation-config.ts.
-// Wasm повертає з init не тексти, а набір бітів некоректних полів. Тексти формує воркер.
-const INVALID_INSTRUMENT_COUNT = 1;
-const INVALID_UPDATES_PER_BATCH = 2;
-const INVALID_BATCH_INTERVAL_MS = 4;
-
-class MarketWorker {
+export class MarketSimulation {
     private readonly post: (message: FromWorkerMessage) => void;
 
     // ── Стан ────────────────────────────────────────────────────────
@@ -170,15 +156,10 @@ class MarketWorker {
     // ── Завантаження Wasm ───────────────────────────────────────────
 
     // Після завантаження виконує команди, що чекали в черзі.
-    // Якщо файл недоступний, повідомляє Angular про помилку запуску, який чекав.
-    async load(url: URL): Promise<void> {
+    // Якщо Wasm не вдалося завантажити, повідомляє Angular про помилку запуску, який чекав.
+    async load(instantiate: () => Promise<WasmExports>): Promise<void> {
         try {
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status} while loading ${String(url)}`);
-            }
-            const { instance } = await WebAssembly.instantiate(await response.arrayBuffer(), {});
-            this.wasm = instance.exports as unknown as WasmExports;
+            this.wasm = await instantiate();
         } catch (error) {
             const reason = error instanceof Error ? error.message : String(error);
             this.failure = `Cannot initialize the market generator: ${reason}`;
@@ -201,20 +182,3 @@ class MarketWorker {
         return 0;
     }
 }
-
-// Текст помилки з бітів, які повернув init у Wasm.
-function describeInitErrors(errors: number): string {
-    const fields: string[] = [];
-    if (errors & INVALID_INSTRUMENT_COUNT) fields.push('instrumentCount');
-    if (errors & INVALID_UPDATES_PER_BATCH) fields.push('updatesPerBatch');
-    if (errors & INVALID_BATCH_INTERVAL_MS) fields.push('batchIntervalMs');
-    return `Market generator rejected the settings: ${fields.join(', ')} out of range`;
-}
-
-// ── Точка входу ─────────────────────────────────────────────────────
-
-const worker = new MarketWorker((message) => postMessage(message));
-
-addEventListener('message', (event: MessageEvent<ToWorkerMessage>) => worker.handle(event.data));
-
-void worker.load(new URL('wasm/market_gen.wasm', self.location.href));

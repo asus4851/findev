@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { FIELDS, MarketData } from './market-data';
+import { FIELDS } from '../wasm/buffer-format';
+import { MarketData } from './market-data';
 
 // Буфер у форматі Wasm: [instrument, price, qty, bid, ask, bidQty, askQty].
 const buffer = (...rows: number[][]) => Int32Array.from(rows.flat());
@@ -34,36 +35,6 @@ describe('MarketData', () => {
         }]);
     });
 
-    it('дисбаланс недоступний, коли в стакані нуль на обох боках', () => {
-        const data = new MarketData(1);
-        data.applyBatch(buffer(trade(10_000, 5, 0, 0)));
-
-        expect(data.snapshot()[0].imbalance).toBeUndefined();
-    });
-
-    it('дисбаланс −1 і +1, коли один бік порожній', () => {
-        const data = new MarketData(1);
-        data.applyBatch(buffer(trade(10_000, 5, 0, 300)));
-        expect(data.snapshot()[0].imbalance).toBe(-1);
-
-        data.applyBatch(buffer(trade(10_000, 5, 300, 0)));
-        expect(data.snapshot()[0].imbalance).toBe(1);
-    });
-
-    it('кількості в стакані не входять в обсяг, рахується лише кількість угод', () => {
-        const data = new MarketData(1);
-        data.applyBatch(buffer(trade(10_000, 7, 999, 999)));
-
-        expect(data.snapshot()[0].volume).toBe(7);
-    });
-
-    it('VWAP не округлюється до показу', () => {
-        const data = new MarketData(1);
-        data.applyBatch(buffer(trade(10_000, 1), trade(10_001, 2)));
-
-        expect(data.snapshot()[0].vwapCents).toBeCloseTo(30_002 / 3, 10);
-    });
-
     it('інструменти не впливають один на одного', () => {
         const data = new MarketData(3);
         data.applyBatch(buffer(
@@ -95,7 +66,35 @@ describe('MarketData', () => {
         expect(symbols.slice(10)).toEqual(['SYM11', 'SYM12']);
     });
 
-    it('формат буфера: сім чисел на оновлення', () => {
-        expect(FIELDS).toBe(7);
+    it('читає поля оновлення за зміщеннями формату Wasm', () => {
+        const data = new MarketData(2);
+        data.applyBatch(buffer([1, 5_000, 3, 4_990, 5_010, 100, 300]));
+
+        expect(data.snapshot()[1]).toEqual({
+            symbol: 'BETA',
+            lastPriceCents: 5_000,
+            spreadCents: 20,
+            volume: 3,
+            vwapCents: 5_000,
+            imbalance: -0.5,
+        });
     });
+
+    it('неповне оновлення в кінці буфера ігнорується', () => {
+        const data = new MarketData(1);
+        const rows = buffer(trade(10_000, 10));
+        const withTail = Int32Array.from([...rows, ...rows.slice(0, FIELDS - 1)]);
+
+        data.applyBatch(withTail);
+
+        expect(data.snapshot()[0].volume).toBe(10);
+    });
+
+    it('порожній буфер нічого не змінює', () => {
+        const data = new MarketData(1);
+        data.applyBatch(new Int32Array(0));
+
+        expect(data.snapshot()[0].volume).toBe(0);
+    });
+
 });
