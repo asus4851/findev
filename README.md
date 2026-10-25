@@ -51,7 +51,7 @@ npm start / npm run build
 ```
 backend/market/                  бэкенд-домен «рынок», публичный API — index.ts
 ├── contracts/                   протокол сообщений, настройки и их границы, частоты снимков
-├── market-gen-ts/               эталонный генератор на TypeScript и песочница с графиком
+├── market-gen-ts/               эталонный генератор на TypeScript (с scheduler.ts) и песочница с графиком
 ├── market-gen-as/               генератор на AssemblyScript → build/market_gen.wasm
 └── worker/src/                  Web Worker
     ├── market.worker.ts         точка входа
@@ -61,8 +61,12 @@ backend/market/                  бэкенд-домен «рынок», пуб�
     └── utils/                   имена инструментов
 
 frontend/src/app/
-└── domains/market/              фронтенд-домен «рынок», публичный API — index.ts
-    ├── pages/                   dashboard, settings
+├── app.component.*              оболочка с навигацией
+├── app.config.ts, app.routes.ts настройка приложения и маршруты (запуск при старте через provideAppInitializer)
+└── domains/market/              фронтенд-домен «рынок»
+    ├── index.ts                 публичный API: MARKET_ROUTES, MarketSessionService, тип воркера
+    ├── market.routes.ts         ленивые маршруты страниц
+    ├── pages/                   dashboard (таблица метрик и Table refresh), settings (форма на сигналах)
     ├── services/                market-api (клиент бэкенда: воркер и postMessage), market-session (состояние запуска)
     ├── tokens/                  токен создания воркера
     ├── utils/                   пайпы формата цены и дисбаланса
