@@ -17,6 +17,12 @@ interface WasmExports {
     dispose(): void;
 }
 
+// Дзеркало бітів з ../../market-gen-as/assembly/config/simulation-config.ts.
+// Wasm повертає з init не тексти, а набір бітів некоректних полів. Тексти формує воркер.
+const INVALID_INSTRUMENT_COUNT = 1;
+const INVALID_UPDATES_PER_BATCH = 2;
+const INVALID_BATCH_INTERVAL_MS = 4;
+
 class MarketWorker {
     private readonly post: (message: FromWorkerMessage) => void;
 
@@ -25,6 +31,8 @@ class MarketWorker {
     private wasm: WasmExports | null = null;
     // Команди, що прийшли до завершення завантаження Wasm, виконуються після нього.
     private readonly pending: ToWorkerMessage[] = [];
+    // Текст помилки завантаження. Після неї кожен новий start отримує цю помилку.
+    private failure: string | null = null;
 
     // Поточний запуск. runId ідентифікує його, щоб Angular відкидав відповіді старого.
     private runId: number = 0;
@@ -42,7 +50,11 @@ class MarketWorker {
     handle(message: ToWorkerMessage): void {
         const wasm = this.wasm;
         if (wasm === null) {
-            this.pending.push(message);
+            if (this.failure === null) {
+                this.pending.push(message);
+            } else if (message.type === 'start') {
+                this.post({ type: 'error', runId: message.runId, message: this.failure });
+            }
             return;
         }
 
@@ -67,10 +79,13 @@ class MarketWorker {
     private start(wasm: WasmExports, runId: number, settings: SimulationSettings, seed: number): void {
         this.stop();
         this.runId = runId;
+        // Стан попереднього запуску відкидається одразу: після помилки init він не має ожити.
+        this.settings = null;
+        this.data = null;
 
         const errors = wasm.init(settings.instrumentCount, settings.updatesPerBatch, settings.batchIntervalMs, seed >>> 0);
         if (errors !== 0) {
-            this.post({ type: 'error', runId, message: `Wasm rejected the settings (error bits ${errors})` });
+            this.post({ type: 'error', runId, message: describeInitErrors(errors) });
             return;
         }
 
@@ -121,11 +136,9 @@ class MarketWorker {
             this.wasm = instance.exports as unknown as WasmExports;
         } catch (error) {
             const reason = error instanceof Error ? error.message : String(error);
-            this.post({
-                type: 'error',
-                runId: this.pendingRunId(),
-                message: `Cannot initialize the market generator: ${reason}`,
-            });
+            this.failure = `Cannot initialize the market generator: ${reason}`;
+            this.post({ type: 'error', runId: this.pendingRunId(), message: this.failure });
+            this.pending.length = 0;
             return;
         }
 
@@ -142,6 +155,15 @@ class MarketWorker {
         }
         return 0;
     }
+}
+
+// Текст помилки з бітів, які повернув init у Wasm.
+function describeInitErrors(errors: number): string {
+    const fields: string[] = [];
+    if (errors & INVALID_INSTRUMENT_COUNT) fields.push('instrumentCount');
+    if (errors & INVALID_UPDATES_PER_BATCH) fields.push('updatesPerBatch');
+    if (errors & INVALID_BATCH_INTERVAL_MS) fields.push('batchIntervalMs');
+    return `Market generator rejected the settings: ${fields.join(', ')} out of range`;
 }
 
 // ── Точка входу ──────────────────────────────────────────────────────
