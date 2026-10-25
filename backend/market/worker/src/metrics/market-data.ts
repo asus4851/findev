@@ -1,5 +1,5 @@
-// Обробка даних з Wasm: розбирає батчі угод і віддає п'ять метрик з ТЗ для кожного інструмента.
-// Не залежить від воркера і Wasm, тому тестується на звичайних масивах.
+// Обработка данных из Wasm: разбирает батчи сделок и отдаёт пять метрик из ТЗ для каждого инструмента.
+// Не зависит от воркера и Wasm, поэтому тестируется на обычных массивах.
 import type { InstrumentMetrics } from '../../../contracts/protocol';
 import { getSymbol } from '../utils/symbols';
 import {
@@ -15,7 +15,7 @@ import {
 import { InstrumentStats } from './instrument-stats';
 
 export class MarketData {
-    // Індекс у масиві збігається з індексом інструмента в буфері Wasm.
+    // Индекс в массиве совпадает с индексом инструмента в буфере Wasm.
     private readonly instruments: InstrumentStats[] = [];
 
     constructor(instrumentCount: number) {
@@ -24,8 +24,8 @@ export class MarketData {
         }
     }
 
-    // Додає всі угоди батча. Буфер дійсний лише до наступного nextBatch,
-    // тому дані розбираються одразу і ніде не зберігаються.
+    // Добавляет все сделки батча. Буфер действителен только до следующего nextBatch,
+    // поэтому данные разбираются сразу и нигде не хранятся.
     applyBatch(buffer: Int32Array): void {
         for (let offset = 0; offset + FIELDS <= buffer.length; offset += FIELDS) {
             this.instruments[buffer[offset + F_INSTRUMENT]].applyTrade(
@@ -39,7 +39,7 @@ export class MarketData {
         }
     }
 
-    // Рядки таблиці для Angular, по одному на інструмент.
+    // Строки таблицы для Angular, по одной на инструмент.
     snapshot(): InstrumentMetrics[] {
         const rows: InstrumentMetrics[] = [];
         for (let i = 0; i < this.instruments.length; i++) {

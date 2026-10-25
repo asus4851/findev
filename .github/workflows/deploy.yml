@@ -1,7 +1,7 @@
 name: Deploy to GitHub Pages
 
-# Кожен push у main перевіряє код (лінт, тести), збирає застосунок і публікує його на GitHub Pages.
-# Якщо лінт або хоч один тест падає, деплой не відбувається.
+# Каждый push в main проверяет код (линт, тесты), собирает приложение и публикует его на GitHub Pages.
+# Если линт или хотя бы один тест падает, деплой не происходит.
 on:
   push:
     branches: [main]
@@ -12,7 +12,7 @@ permissions:
   pages: write
   id-token: write
 
-# Нова публікація скасовує попередню, яка ще не завершилась.
+# Новая публикация отменяет предыдущую, которая ещё не завершилась.
 concurrency:
   group: pages
   cancel-in-progress: true
@@ -33,8 +33,8 @@ jobs:
             backend/market/worker/package-lock.json
             frontend/package-lock.json
 
-      # Wasm збирається з AssemblyScript під час prebuild фронтенду, а воркер імпортує rxjs
-      # зі своєї папки, тому залежності потрібні в кожному пакеті.
+      # Wasm собирается из AssemblyScript во время prebuild фронтенда, а воркер импортирует rxjs
+      # из своей папки, поэтому зависимости нужны в каждом пакете.
       - run: npm ci
         working-directory: backend/market/market-gen-as
       - run: npm ci
@@ -44,7 +44,7 @@ jobs:
       - run: npm ci
         working-directory: frontend
 
-      # Межі доменів: імпорт лише через публічні index.ts.
+      # Границы доменов: импорт только через публичные index.ts.
       - name: Lint
         run: npm run lint
         working-directory: frontend
@@ -62,12 +62,12 @@ jobs:
         run: npm test -- --watch=false
         working-directory: frontend
 
-      # На Pages сайт живе за адресою /<назва-репозиторію>/, тому base href береться з назви репозиторію.
+      # На Pages сайт живёт по адресу /<имя-репозитория>/, поэтому base href берётся из имени репозитория.
       - run: npm run build -- --base-href /${{ github.event.repository.name }}/
         working-directory: frontend
 
-      # Pages не знає про маршрути Angular: для прямого переходу на /settings віддає 404.html,
-      # тож копія index.html змушує застосунок завантажитися і сам обробити адресу.
+      # Pages не знает о маршрутах Angular: при прямом переходе на /settings отдаёт 404.html,
+      # поэтому копия index.html заставляет приложение загрузиться и самому обработать адрес.
       - run: cp index.html 404.html
         working-directory: frontend/dist/frontend/browser
 

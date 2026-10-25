@@ -1,16 +1,16 @@
-// Межа з Wasm: які функції експортує ../../../market-gen-as/assembly/index.ts і як їх завантажити.
+// Граница с Wasm: какие функции экспортирует ../../../market-gen-as/assembly/index.ts и как их загрузить.
 
 export interface WasmExports {
     memory: WebAssembly.Memory;
     FIELDS: WebAssembly.Global;
-    // Новий запуск. Повертає 0 або біти некоректних налаштувань (див. init-errors.ts).
+    // Новый запуск. Возвращает 0 или биты некорректных настроек (см. init-errors.ts).
     init(instrumentCount: number, updatesPerBatch: number, batchIntervalMs: number, seed: number): number;
-    // Вказівник на буфер батча або 0. Буфер дійсний до наступного виклику.
+    // Указатель на буфер батча или 0. Буфер действителен до следующего вызова.
     nextBatch(): number;
     dispose(): void;
 }
 
-// Завантажує і компілює Wasm-модуль за адресою. Кидає зрозумілу помилку, якщо файл недоступний.
+// Загружает и компилирует Wasm-модуль по адресу. Бросает понятную ошибку, если файл недоступен.
 export async function fetchWasm(url: URL): Promise<WasmExports> {
     const response = await fetch(url);
     if (!response.ok) {

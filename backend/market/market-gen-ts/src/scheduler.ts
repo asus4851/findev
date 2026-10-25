@@ -1,16 +1,16 @@
-// Частота оновлень: як часто генерувати батч.
-// Ця частина лишиться у воркері на TypeScript: у Wasm немає таймерів.
+// Частота обновлений: как часто генерировать батч.
+// Эта часть остаётся в воркере на TypeScript: в Wasm нет таймеров.
 import { SimulationConfig, validateSimulationConfig } from './config/simulation-config';
 import { MarketUpdate } from './model/market-update';
 import { Quote } from './model/quote';
 import { generateBatch } from './simulator';
 import { RandomGenerator } from './utils/random-generator';
 
-// Раз на batchIntervalMs генеруємо батч з updatesPerBatch угод.
-// Наприклад 100 угод кожні 500 мс дають 200 угод за секунду загалом.
-// Повертає функцію зупинки.
-// З некоректними налаштуваннями не запускається, а кидає помилку з переліком проблем:
-// ТЗ вимагає зрозумілих помилок ініціалізації.
+// Раз в batchIntervalMs генерируем батч из updatesPerBatch сделок.
+// Например, 100 сделок каждые 500 мс дают 200 сделок в секунду всего.
+// Возвращает функцию остановки.
+// С некорректными настройками не запускается, а бросает ошибку с перечнем проблем:
+// ТЗ требует понятных ошибок инициализации.
 export function startSimulation(
     quotes: Quote[],
     config: SimulationConfig,

@@ -1,4 +1,4 @@
-// Одне оновлення з ТЗ: одна угода і знімок стакана після неї.
+// Одно обновление из ТЗ: одна сделка и снимок стакана после неё.
 export class MarketUpdate {
     readonly instrument: number;
     readonly priceCents: number;

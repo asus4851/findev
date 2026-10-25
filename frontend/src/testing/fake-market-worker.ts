@@ -1,7 +1,7 @@
 import type { FromWorkerMessage, InstrumentMetrics, ToWorkerMessage } from '@backend/market';
 import type { MarketWorker } from '../app/domains/market';
 
-// Підробний воркер: запам'ятовує команди і дозволяє тесту надсилати відповіді "бекенду".
+// Поддельный воркер: запоминает команды и позволяет тесту отправлять ответы «бэкенда».
 export class FakeMarketWorker implements MarketWorker {
   onmessage: ((event: MessageEvent) => void) | null = null;
   onerror: ((event: ErrorEvent) => void) | null = null;
@@ -20,7 +20,7 @@ export class FakeMarketWorker implements MarketWorker {
     this.onmessage?.({ data: message } as MessageEvent);
   }
 
-  // runId останньої команди start: так тест відповідає саме поточному запуску.
+  // runId последней команды start: так тест отвечает именно текущему запуску.
   get currentRunId(): number {
     const starts = this.sent.filter((m) => m.type === 'start');
     const last = starts.at(-1);

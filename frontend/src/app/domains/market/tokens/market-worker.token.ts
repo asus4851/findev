@@ -1,6 +1,6 @@
 import { InjectionToken } from '@angular/core';
 
-// Мінімум від Web Worker, який потрібен сервісу. У тестах його замінює підробка.
+// Минимум от Web Worker, который нужен сервису. В тестах его заменяет подделка.
 export interface MarketWorker {
   onmessage: ((event: MessageEvent) => void) | null;
   onerror: ((event: ErrorEvent) => void) | null;
@@ -10,8 +10,8 @@ export interface MarketWorker {
 
 export type MarketWorkerFactory = () => MarketWorker;
 
-// Як створити воркер "бекенду". Angular сам збирає файл воркера з backend/market/worker
-// окремим бандлом, бо знаходить шаблон new Worker(new URL(...)).
+// Как создать воркер «бэкенда». Angular сам собирает файл воркера из backend/market/worker
+// отдельным бандлом, потому что находит шаблон new Worker(new URL(...)).
 export const MARKET_WORKER_FACTORY = new InjectionToken<MarketWorkerFactory>('MARKET_WORKER_FACTORY', {
   providedIn: 'root',
   factory: () => () =>

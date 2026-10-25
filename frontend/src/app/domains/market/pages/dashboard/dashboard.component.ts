@@ -18,7 +18,7 @@ const centsCurrency = new CentsCurrency();
 const imbalance = new Imbalance();
 const integer = new DecimalPipe('en-US');
 
-// Колонки таблиці метрик: яке поле InstrumentMetrics, заголовок і формат показу.
+// Колонки таблицы метрик: какое поле InstrumentMetrics, заголовок и формат отображения.
 const COLUMNS: TableColumn<InstrumentMetrics>[] = [
   { field: 'symbol', header: 'Instrument' },
   { field: 'lastPriceCents', header: 'Last price', pipe: centsCurrency, numeric: true },
@@ -28,7 +28,7 @@ const COLUMNS: TableColumn<InstrumentMetrics>[] = [
   { field: 'imbalance', header: 'Imbalance', pipe: imbalance, numeric: true },
 ];
 
-// Підпис варіанта частоти оновлення таблиці.
+// Подпись варианта частоты обновления таблицы.
 function refreshLabel(refreshMs: number): string {
   return refreshMs === REFRESH_UNLIMITED ? 'No limit (performance mode)' : `${refreshMs / 1000} s`;
 }

@@ -1,8 +1,8 @@
-// Логіка воркера: запускає і зупиняє Wasm-генератор, отримує від нього батчі і надсилає знімки.
-// Метрики рахує MarketData, тут лише керування: завантаження Wasm, таймер, команди.
+// Логика воркера: запускает и останавливает Wasm-генератор, получает от него батчи и отправляет снимки.
+// Метрики считает MarketData, здесь только управление: загрузка Wasm, таймер, команды.
 //
-// Клас не залежить від глобального об'єкта воркера: повідомлення віддає через post,
-// а Wasm отримує через функцію завантаження. Тому в тестах його створюють з підробками.
+// Класс не зависит от глобального объекта воркера: сообщения отдаёт через post,
+// а Wasm получает через функцию загрузки. Поэтому в тестах его создают с подделками.
 import { BehaviorSubject, Subject, asyncScheduler, switchMap, throttleTime } from 'rxjs';
 import type { FromWorkerMessage, SimulationSettings, ToWorkerMessage } from '../../contracts/protocol';
 import { REFRESH_DEFAULT_MS, REFRESH_UNLIMITED } from '../../contracts/refresh-rate';
@@ -14,31 +14,31 @@ import type { WasmExports } from './wasm/wasm-exports';
 export class MarketSimulation {
     private readonly post: (message: FromWorkerMessage) => void;
 
-    // ── Стан ────────────────────────────────────────────────────────
+    // ── Состояние ───────────────────────────────────────────────────
 
     private wasm: WasmExports | null = null;
-    // Команди, що прийшли до завершення завантаження Wasm, виконуються після нього.
+    // Команды, пришедшие до окончания загрузки Wasm, выполняются после неё.
     private readonly pending: ToWorkerMessage[] = [];
-    // Текст помилки завантаження. Після неї кожен новий start отримує цю помилку.
+    // Текст ошибки загрузки. После неё каждый новый start получает эту ошибку.
     private failure: string | null = null;
 
-    // Поточний запуск. runId ідентифікує його, щоб Angular відкидав відповіді старого.
+    // Текущий запуск. runId идентифицирует его, чтобы Angular отбрасывал ответы старого.
     private runId: number = 0;
     private settings: SimulationSettings | null = null;
     private data: MarketData | null = null;
-    // Таймер генерації. null означає, що Wasm зупинено.
+    // Таймер генерации. null означает, что Wasm остановлен.
     private timer: ReturnType<typeof setInterval> | null = null;
-    // Є угоди, яких Angular ще не бачив у знімку.
+    // Есть сделки, которых Angular ещё не видел в снимке.
     private changed: boolean = false;
 
-    // Частота знімків для Angular. Не належить запуску: обрана частота діє і для наступних.
+    // Частота снимков для Angular. Не принадлежит запуску: выбранная частота действует и для следующих.
     private readonly refreshMs$ = new BehaviorSubject<number>(REFRESH_DEFAULT_MS);
-    // Подія на кожен оброблений батч: за нею надсилається знімок.
+    // Событие на каждый обработанный батч: по нему отправляется снимок.
     private readonly batch$ = new Subject<void>();
 
-    // Кожен батч одразу йде в метрики, а знімок надсилається не частіше за refreshMs.
-    // leading: знімок іде одразу з першим батчем вікна; trailing: найсвіжіші угоди
-    // не застрягають, а йдуть наприкінці вікна. Без обмеження знімок іде після кожного батча.
+    // Каждый батч сразу идёт в метрики, а снимок отправляется не чаще refreshMs.
+    // leading: снимок уходит сразу с первым батчем окна; trailing: самые свежие сделки
+    // не застревают, а уходят в конце окна. Без ограничения снимок уходит после каждого батча.
     constructor(post: (message: FromWorkerMessage) => void) {
         this.post = post;
         this.refreshMs$
@@ -50,7 +50,7 @@ export class MarketSimulation {
             .subscribe(() => this.flush());
     }
 
-    // ── Команди з Angular ───────────────────────────────────────────
+    // ── Команды из Angular ──────────────────────────────────────────
 
     handle(message: ToWorkerMessage): void {
         const wasm = this.wasm;
@@ -86,11 +86,11 @@ export class MarketSimulation {
         }
     }
 
-    // Новий запуск: Wasm скидає весь попередній стан, метрики починаються з нуля.
+    // Новый запуск: Wasm сбрасывает всё предыдущее состояние, метрики начинаются с нуля.
     private start(wasm: WasmExports, runId: number, settings: SimulationSettings, seed: number): void {
         this.stop();
         this.runId = runId;
-        // Стан попереднього запуску відкидається одразу: після помилки init він не має ожити.
+        // Состояние предыдущего запуска отбрасывается сразу: после ошибки init оно не должно ожить.
         this.settings = null;
         this.data = null;
 
@@ -106,16 +106,16 @@ export class MarketSimulation {
         this.run(wasm);
     }
 
-    // ── Генерація ───────────────────────────────────────────────────
+    // ── Генерация ───────────────────────────────────────────────────
 
-    // Запускає таймер: на кожен тік Wasm генерує один батч.
+    // Запускает таймер: на каждый тик Wasm генерирует один батч.
     private run(wasm: WasmExports): void {
         if (this.settings === null || this.timer !== null) return;
         this.timer = setInterval(() => this.tick(wasm), this.settings.batchIntervalMs);
         this.post({ type: 'status', runId: this.runId, status: 'running' });
     }
 
-    // Зупиняє Wasm: нові батчі не генеруються, накопичені значення лишаються.
+    // Останавливает Wasm: новые батчи не генерируются, накопленные значения остаются.
     private stop(): void {
         if (this.timer === null) return;
         clearInterval(this.timer);
@@ -123,8 +123,8 @@ export class MarketSimulation {
         this.post({ type: 'status', runId: this.runId, status: 'paused' });
     }
 
-    // Отримує батч від Wasm: усі угоди одразу потрапляють у метрики, незалежно від частоти знімків.
-    // Int32Array лише дивиться в пам'ять Wasm, без копіювання.
+    // Получает батч от Wasm: все сделки сразу попадают в метрики, независимо от частоты снимков.
+    // Int32Array лишь смотрит в память Wasm, без копирования.
     private tick(wasm: WasmExports): void {
         const pointer = wasm.nextBatch();
         if (pointer === 0 || this.settings === null || this.data === null) return;
@@ -134,15 +134,15 @@ export class MarketSimulation {
         this.batch$.next();
     }
 
-    // ── Знімки для Angular ──────────────────────────────────────────
+    // ── Снимки для Angular ──────────────────────────────────────────
 
-    // Нова частота діє з наступного батча, без нового запуску. Генерацію і метрики не змінює.
+    // Новая частота действует со следующего батча, без нового запуска. Генерацию и метрики не меняет.
     private setRefresh(refreshMs: number): void {
         if (!Number.isInteger(refreshMs) || refreshMs < 0) return;
         this.refreshMs$.next(refreshMs);
     }
 
-    // Надсилає знімок, лише якщо з минулого були нові угоди.
+    // Отправляет снимок, только если с прошлого были новые сделки.
     private flush(): void {
         if (this.changed) this.sendSnapshot();
     }
@@ -153,10 +153,10 @@ export class MarketSimulation {
         this.post({ type: 'snapshot', runId: this.runId, rows: this.data.snapshot() });
     }
 
-    // ── Завантаження Wasm ───────────────────────────────────────────
+    // ── Загрузка Wasm ───────────────────────────────────────────────
 
-    // Після завантаження виконує команди, що чекали в черзі.
-    // Якщо Wasm не вдалося завантажити, повідомляє Angular про помилку запуску, який чекав.
+    // После загрузки выполняет команды, ждавшие в очереди.
+    // Если Wasm не удалось загрузить, сообщает Angular об ошибке запуска, который ждал.
     async load(instantiate: () => Promise<WasmExports>): Promise<void> {
         try {
             this.wasm = await instantiate();
@@ -173,7 +173,7 @@ export class MarketSimulation {
         }
     }
 
-    // runId запуску, який чекав завантаження: помилку Angular має прив'язати до свого запуску.
+    // runId запуска, который ждал загрузки: ошибку Angular должен привязать к своему запуску.
     private pendingRunId(): number {
         for (let i = this.pending.length - 1; i >= 0; i--) {
             const message = this.pending[i];

@@ -1,8 +1,8 @@
 /// <reference lib="webworker" />
-// Точка входу Web Worker: створює MarketSimulation, передає йому команди з Angular і завантажує Wasm.
+// Точка входа Web Worker: создаёт MarketSimulation, передаёт ему команды из Angular и загружает Wasm.
 //
-// Файл market_gen.wasm кладе поруч зі збіркою фронтенд (каталог wasm/), тому шлях
-// рахується відносно адреси самого воркера і працює з будь-яким base href.
+// Файл market_gen.wasm кладёт рядом со сборкой фронтенд (каталог wasm/), поэтому путь
+// считается относительно адреса самого воркера и работает с любым base href.
 import type { ToWorkerMessage } from '../../contracts/protocol';
 import { MarketSimulation } from './market-simulation';
 import { fetchWasm } from './wasm/wasm-exports';

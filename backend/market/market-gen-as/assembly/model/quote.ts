@@ -1,4 +1,4 @@
-// Дзеркало ../../../market-gen-ts/src/model/quote.ts.
+// Зеркало ../../../market-gen-ts/src/model/quote.ts.
 import { MAX_PRICE_CENTS, MIN_PRICE_CENTS } from '../constants';
 import { getPriceDelta, getSpread, getStartPrice } from '../market-model/price';
 import { getQty } from '../market-model/quantity';
@@ -8,21 +8,21 @@ import { Side } from './side';
 
 export class Quote {
     readonly instrument: i32;
-    // Ціни задаються лише через setPrices. Числові поля в AssemblyScript стартують з 0,
-    // тому позначка `!`, як у TypeScript, тут не потрібна.
+    // Цены задаются только через setPrices. Числовые поля в AssemblyScript стартуют с 0,
+    // поэтому пометка `!`, как в TypeScript, здесь не нужна.
     ask: i32 = 0;
     bid: i32 = 0;
     price: i32 = 0;
     askQty: i32 = 0;
     bidQty: i32 = 0;
 
-    // Генератор випадкових чисел запуску. Усі квоти запуску ділять один екземпляр,
-    // тому послідовність подій визначається одним seed.
+    // Генератор случайных чисел запуска. Все котировки запуска делят один экземпляр,
+    // поэтому последовательность событий определяется одним seed.
     private readonly random: RandomGenerator;
 
-    // Початковий стан інструмента: опорна ціна і стакан навколо неї.
-    // ask і bid будуються від price тим самим getSpread, що й при перекотируванні,
-    // тому інваріанти (bid < ask, ціни додатні) діють з першої угоди.
+    // Начальное состояние инструмента: опорная цена и стакан вокруг неё.
+    // ask и bid строятся от price тем же getSpread, что и при перекотировке,
+    // поэтому инварианты (bid < ask, цены положительны) действуют с первой сделки.
     constructor(instrument: i32, random: RandomGenerator, startPrice: i32 = getStartPrice(random)) {
         this.instrument = instrument;
         this.random = random;
@@ -31,28 +31,28 @@ export class Quote {
         this.bidQty = getQty(random);
     }
 
-    // Змінює поля самого Quote, тому наступна угода стартує вже від нового стану.
-    // Застосовує ринковий ордер до стакана і повертає ціну виконання:
-    // ask для покупця, bid для продавця, вже після можливого перекотирування.
-    // Тому ціна угоди завжди дорівнює bid або ask знімка цього ж оновлення.
+    // Меняет поля самого Quote, поэтому следующая сделка стартует уже от нового состояния.
+    // Применяет рыночный ордер к стакану и возвращает цену исполнения:
+    // ask для покупателя, bid для продавца, уже после возможной перекотировки.
+    // Поэтому цена сделки всегда равна bid или ask снимка этого же обновления.
     //
-    // TODO: замість ціни повертати сутність угоди Trade
+    // TODO: вместо цены возвращать сущность сделки Trade
     // (instrument, side, priceCents, quantity, sweptLevel).
-    // Коли ордер більший за рівень, частина виконується за старою ціною,
-    // а надлишок за новою. Trade має рахувати середню ціну виконання:
-    //   avgPrice = (available × старийРівень + excess × новийРівень) / quantity
-    // і віднімати надлишок від кількості нового рівня.
+    // Когда ордер больше уровня, часть исполняется по старой цене,
+    // а излишек по новой. Trade должен считать среднюю цену исполнения:
+    //   avgPrice = (available × старыйУровень + excess × новыйУровень) / quantity
+    // и вычитать излишек из количества нового уровня.
     applyOrder(order: Order): i32 {
         const isBuy = order.side == Side.Buy;
 
-        // Покупець бере з ask, продавець віддає в bid.
+        // Покупатель берёт из ask, продавец отдаёт в bid.
         const available = isBuy ? this.askQty : this.bidQty;
 
         if (order.quantity > available) {
-            // Рівню не вистачає кількості: ордер проходить стакан, ціна зсувається.
+            // Уровню не хватает количества: ордер проходит стакан, цена сдвигается.
             this.requote(isBuy);
         } else if (isBuy) {
-            // Кількості вистачає: зменшуємо відповідний бік.
+            // Количества хватает: уменьшаем соответствующую сторону.
             this.askQty -= order.quantity;
         } else {
             this.bidQty -= order.quantity;
@@ -61,8 +61,8 @@ export class Quote {
         return isBuy ? this.ask : this.bid;
     }
 
-    // Рівень вичерпано: ціна зсувається в бік угоди, обидва боки стакана котируються заново.
-    // Buy рухає ціну від ask вгору, sell рухає від bid вниз.
+    // Уровень исчерпан: цена сдвигается в сторону сделки, обе стороны стакана котируются заново.
+    // Buy двигает цену от ask вверх, sell двигает от bid вниз.
     private requote(isBuy: bool): void {
         this.setPrices(isBuy
             ? getPriceDelta(this.random, this.ask, Side.Buy)
@@ -71,13 +71,13 @@ export class Quote {
         this.bidQty = getQty(this.random);
     }
 
-    // Єдине місце, де змінюються ціни квоти, і тут же перевіряються інваріанти:
-    //  - опорна ціна і bid не нижче MIN_PRICE_CENTS, тобто завжди додатні;
-    //  - опорна ціна не вище MAX_PRICE_CENTS, щоб не переповнити i32
-    //    (ask може перевищити межу лише на відступ спреду, до 0,05%);
-    //  - ask вищий за price щонайменше на SPREAD_DELTA_MIN_CENTS, а bid нижчий за price
-    //    (або дорівнює 1 центу, якщо price дуже мала), тому bid завжди нижчий за ask.
-    // Порядок викликів getSpread (спершу ask, потім bid) збережено, щоб послідовність rand не змінилась.
+    // Единственное место, где меняются цены котировки, и здесь же проверяются инварианты:
+    //  - опорная цена и bid не ниже MIN_PRICE_CENTS, то есть всегда положительны;
+    //  - опорная цена не выше MAX_PRICE_CENTS, чтобы не переполнить i32
+    //    (ask может превысить границу лишь на отступ спреда, до 0,05%);
+    //  - ask выше price минимум на SPREAD_DELTA_MIN_CENTS, а bid ниже price
+    //    (или равен 1 центу, если price очень мала), поэтому bid всегда ниже ask.
+    // Порядок вызовов getSpread (сначала ask, потом bid) сохранён, чтобы последовательность rand не изменилась.
     private setPrices(price: i32): void {
         this.price = min<i32>(MAX_PRICE_CENTS, max<i32>(MIN_PRICE_CENTS, price));
         this.ask = getSpread(this.random, this.price);

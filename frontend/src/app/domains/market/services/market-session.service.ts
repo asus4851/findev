@@ -3,17 +3,17 @@ import { REFRESH_DEFAULT_MS, type FromWorkerMessage, type ToWorkerMessage } from
 import { MARKET_WORKER_FACTORY, type MarketWorker } from '../tokens/market-worker.token';
 import { copySettings, defaultSettings, type InstrumentMetrics, type SimulationSettings } from '../market.model';
 
-// starting: запуск відправлено, даних ще немає; error: запуск не вдався.
+// starting: запуск отправлен, данных ещё нет; error: запуск не удался.
 export type SessionState = 'starting' | 'running' | 'paused' | 'error';
 
-// Єдиний на застосунок зв'язок з воркером і стан активного запуску для обох сторінок.
-// Живе в корені, тому навігація між сторінками не створює нових воркерів і не зупиняє запуск.
+// Единственная на приложение связь с воркером и состояние активного запуска для обеих страниц.
+// Живёт в корне, поэтому навигация между страницами не создаёт новых воркеров и не останавливает запуск.
 @Injectable({ providedIn: 'root' })
 export class MarketSession {
   private readonly createWorker = inject(MARKET_WORKER_FACTORY);
   private worker: MarketWorker | undefined;
 
-  // Номер поточного запуску. Повідомлення з іншим номером належать старому запуску і відкидаються.
+  // Номер текущего запуска. Сообщения с другим номером относятся к старому запуску и отбрасываются.
   private runId = 0;
 
   private readonly rowsState = signal<InstrumentMetrics[]>([]);
@@ -25,23 +25,23 @@ export class MarketSession {
   readonly rows = this.rowsState.asReadonly();
   readonly state = this.stateState.asReadonly();
   readonly error = this.errorState.asReadonly();
-  // Налаштування активного запуску. Форма редагує власну копію і не змінює їх до Apply.
+  // Настройки активного запуска. Форма редактирует собственную копию и не меняет их до Apply.
   readonly settings = this.settingsState.asReadonly();
-  // Як часто воркер надсилає знімки таблиці. Налаштування клієнта: діє одразу, без нового запуску.
+  // Как часто воркер отправляет снимки таблицы. Настройка клиента: действует сразу, без нового запуска.
   readonly refreshMs = this.refreshMsState.asReadonly();
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.destroy());
   }
 
-  // Перший запуск зі значеннями за замовчуванням. Повторний виклик нічого не робить.
+  // Первый запуск со значениями по умолчанию. Повторный вызов ничего не делает.
   start(): void {
     if (this.worker) return;
     this.apply(this.settingsState());
   }
 
-  // Новий запуск з новими налаштуваннями: значення й підсумки попереднього стираються,
-  // генерація стартує навіть після паузи.
+  // Новый запуск с новыми настройками: значения и итоги предыдущего стираются,
+  // генерация стартует даже после паузы.
   apply(settings: SimulationSettings): void {
     const worker = this.ensureWorker();
     if (!worker) return;
@@ -62,7 +62,7 @@ export class MarketSession {
     if (this.stateState() === 'paused') this.send({ type: 'resume', runId: this.runId });
   }
 
-  // Змінює частоту знімків. Генерацію і накопичені значення не зачіпає.
+  // Меняет частоту снимков. Генерацию и накопленные значения не затрагивает.
   setRefresh(refreshMs: number): void {
     if (refreshMs === this.refreshMsState()) return;
     this.refreshMsState.set(refreshMs);
@@ -85,7 +85,7 @@ export class MarketSession {
     }
   }
 
-  // Воркер створюється при першому запуску і далі використовується повторно.
+  // Воркер создаётся при первом запуске и дальше используется повторно.
   private ensureWorker(): MarketWorker | undefined {
     if (this.worker) return this.worker;
     try {
@@ -93,7 +93,7 @@ export class MarketSession {
       worker.onmessage = (event) => this.handle(event.data as FromWorkerMessage);
       worker.onerror = (event) => this.fail(`Market worker failed: ${event.message || 'unknown error'}`);
       this.worker = worker;
-      // Воркер стартує з частотою за замовчуванням. Якщо її змінили раніше, повідомляємо одразу.
+      // Воркер стартует с частотой по умолчанию. Если её изменили раньше, сообщаем сразу.
       if (this.refreshMsState() !== REFRESH_DEFAULT_MS) {
         this.send({ type: 'setRefresh', refreshMs: this.refreshMsState() });
       }
@@ -113,7 +113,7 @@ export class MarketSession {
     this.stateState.set('error');
   }
 
-  // Звільняє воркер і пам'ять Wasm, коли застосунок знищується.
+  // Освобождает воркер и память Wasm, когда приложение уничтожается.
   private destroy(): void {
     this.send({ type: 'dispose' });
     this.worker?.terminate();

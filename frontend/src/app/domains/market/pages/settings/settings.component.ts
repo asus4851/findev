@@ -15,7 +15,7 @@ const FIELDS: FieldInfo[] = [
   { key: 'batchIntervalMs', label: 'Batch interval, ms', hint: 'Requested time between batches.' },
 ];
 
-// Межі з ТЗ, ціле число. Межі беруться зі спільного контракту, як і у воркері.
+// Границы из ТЗ, целое число. Границы берутся из общего контракта, как и в воркере.
 function limited(path: SchemaPath<number>, field: SimulationConfigField): void {
   const { min: lower, max: upper } = SIMULATION_LIMITS[field];
   const message = `Enter a whole number from ${lower} to ${upper}.`;
@@ -38,7 +38,7 @@ export class Settings {
   protected readonly fields = FIELDS;
   protected readonly applied = signal(false);
 
-  // Власна копія налаштувань: редагування не впливає на запуск до Apply.
+  // Собственная копия настроек: редактирование не влияет на запуск до Apply.
   protected readonly model = signal<SimulationSettings>({ ...this.session.settings() });
 
   protected readonly settingsForm = form(this.model, (path) => {

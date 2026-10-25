@@ -7,7 +7,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
-    // Застосунок стартує з налаштуваннями за замовчуванням, незалежно від відкритої сторінки.
+    // Приложение стартует с настройками по умолчанию, независимо от открытой страницы.
     provideAppInitializer(() => inject(MarketSession).start()),
   ],
 };

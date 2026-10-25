@@ -1,4 +1,4 @@
-// Дзеркало ../../../market-gen-ts/src/model/side.ts.
+// Зеркало ../../../market-gen-ts/src/model/side.ts.
 export enum Side {
     Buy,
     Sell,

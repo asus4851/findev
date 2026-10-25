@@ -1,17 +1,17 @@
 import { ChangeDetectionStrategy, Component, PipeTransform, input } from '@angular/core';
 
-// Колонка таблиці: яке поле рядка показати, який заголовок і як відформатувати значення.
+// Колонка таблицы: какое поле строки показать, какой заголовок и как отформатировать значение.
 export interface TableColumn<T> {
   field: keyof T & string;
   header: string;
-  // Пайп для значення комірки. Без нього значення показується як є.
+  // Пайп для значения ячейки. Без него значение отображается как есть.
   pipe?: PipeTransform;
-  // Числа вирівнюються по правому краю.
+  // Числа выравниваются по правому краю.
   numeric?: boolean;
 }
 
-// Універсальна таблиця: нічого не знає про дані, лише показує передані колонки і рядки.
-// Перша колонка стає заголовком рядка.
+// Универсальная таблица: ничего не знает о данных, только показывает переданные колонки и строки.
+// Первая колонка становится заголовком строки.
 @Component({
   selector: 'app-data-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -21,9 +21,9 @@ export interface TableColumn<T> {
 export class DataTable<T> {
   readonly columns = input.required<TableColumn<T>[]>();
   readonly rows = input.required<T[]>();
-  // Поле, яке однозначно ідентифікує рядок: за ним Angular оновлює рядки замість перестворення.
+  // Поле, которое однозначно идентифицирует строку: по нему Angular обновляет строки вместо пересоздания.
   readonly rowKey = input.required<keyof T & string>();
-  // Текст, поки рядків немає.
+  // Текст, пока строк нет.
   readonly emptyText = input('No data');
 
   protected cell(row: T, column: TableColumn<T>): string {

@@ -1,4 +1,4 @@
-// Дзеркало ../../../market-gen-ts/src/model/order.ts.
+// Зеркало ../../../market-gen-ts/src/model/order.ts.
 import { Side } from './side';
 
 export class Order {

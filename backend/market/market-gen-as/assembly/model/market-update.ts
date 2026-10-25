@@ -1,5 +1,5 @@
-// Дзеркало ../../../market-gen-ts/src/model/market-update.ts.
-// Одне оновлення з ТЗ: одна угода і знімок стакана після неї.
+// Зеркало ../../../market-gen-ts/src/model/market-update.ts.
+// Одно обновление из ТЗ: одна сделка и снимок стакана после неё.
 export class MarketUpdate {
     readonly instrument: i32;
     readonly priceCents: i32;

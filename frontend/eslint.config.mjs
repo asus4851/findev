@@ -1,30 +1,30 @@
 // @ts-check
 import tseslint from 'typescript-eslint';
 
-// Межі доменів. Кожен домен відкриває назовні лише свій публічний API (index.ts),
-// а внутрішні файли домену імпортуються лише зсередини нього самого.
+// Границы доменов. Каждый домен открывает наружу только свой публичный API (index.ts),
+// а внутренние файлы домена импортируются только изнутри него самого.
 
-// ── Бекенд-домен ─────────────────────────────────────────────────────
+// ── Бэкенд-домен ─────────────────────────────────────────────────────
 
-// backend/market доступний фронтенду лише через аліас @backend/market (backend/market/index.ts).
-const backendMessage = "Імпортуй бекенд-домен «ринок» лише через його публічний API: '@backend/market' (backend/market/index.ts).";
+// backend/market доступен фронтенду только через алиас @backend/market (backend/market/index.ts).
+const backendMessage = "Импортируй бэкенд-домен «рынок» только через его публичный API: '@backend/market' (backend/market/index.ts).";
 const backendPatterns = [
-  // Глибокий шлях через аліас: '@backend/market/contracts/protocol'.
+  // Глубокий путь через алиас: '@backend/market/contracts/protocol'.
   { regex: '^@backend/market/', message: backendMessage },
-  // Відносний шлях у папку домену: '../../backend/market/...' або '../../backend/market'.
+  // Относительный путь в папку домена: '../../backend/market/...' или '../../backend/market'.
   { regex: '(^|/)backend/market(/|$)', message: backendMessage },
 ];
 
-// ── Домени фронтенду ─────────────────────────────────────────────────
+// ── Домены фронтенда ─────────────────────────────────────────────────
 
-// Папки в src/app/domains. Новий домен достатньо дописати сюди.
+// Папки в src/app/domains. Новый домен достаточно дописать сюда.
 const DOMAINS = ['market'];
 
-// Імпорт будь-чого глибше за папку домену: 'domains/market/services/...'.
-// Сам 'domains/market' (його index.ts) дозволено.
+// Импорт чего угодно глубже папки домена: 'domains/market/services/...'.
+// Сам 'domains/market' (его index.ts) разрешён.
 const domainPattern = (domain) => ({
   regex: `(^|/)domains/${domain}/.+`,
-  message: `Імпортуй домен «${domain}» лише через його публічний API: 'domains/${domain}' (domains/${domain}/index.ts).`,
+  message: `Импортируй домен «${domain}» только через его публичный API: 'domains/${domain}' (domains/${domain}/index.ts).`,
 });
 
 const restrictImports = (patterns) => ({
@@ -41,13 +41,13 @@ export default tseslint.config(
       parser: tseslint.parser,
     },
   },
-  // Код поза доменами (app.config, app.routes, shared, testing): усі домени лише через index.ts.
+  // Код вне доменов (app.config, app.routes, shared, testing): все домены только через index.ts.
   {
     files: ['src/**/*.ts'],
     ignores: DOMAINS.map((domain) => `src/app/domains/${domain}/**`),
     rules: restrictImports([...backendPatterns, ...DOMAINS.map(domainPattern)]),
   },
-  // Код усередині домену: свої файли напряму, інші домени лише через їхній index.ts.
+  // Код внутри домена: свои файлы напрямую, другие домены только через их index.ts.
   ...DOMAINS.map((domain) => ({
     files: [`src/app/domains/${domain}/**/*.ts`],
     rules: restrictImports([

@@ -1,5 +1,5 @@
-// Генерація батча: з'єднує ордер, стакан і оновлення.
-// Цю частину буде перенесено в Wasm, тому тут немає таймерів і часу.
+// Генерация батча: соединяет ордер, стакан и обновление.
+// Эта часть перенесена в Wasm, поэтому здесь нет таймеров и времени.
 import { getOrderQty } from './market-model/quantity';
 import { MarketUpdate } from './model/market-update';
 import { Order } from './model/order';
@@ -7,8 +7,8 @@ import { Quote } from './model/quote';
 import { Side } from './model/side';
 import { RandomGenerator } from './utils/random-generator';
 
-// Один батч: updatesPerBatch угод по випадкових інструментах.
-// Той самий інструмент може траплятися кілька разів, стакан змінюється від угоди до угоди.
+// Один батч: updatesPerBatch сделок по случайным инструментам.
+// Один и тот же инструмент может встречаться несколько раз, стакан меняется от сделки к сделке.
 export function generateBatch(quotes: Quote[], updatesPerBatch: number, random: RandomGenerator): MarketUpdate[] {
     const updates: MarketUpdate[] = [];
 
@@ -17,7 +17,7 @@ export function generateBatch(quotes: Quote[], updatesPerBatch: number, random: 
         const side = random.rand(0, 1) == 0 ? Side.Buy : Side.Sell;
         const order = new Order(quote.instrument, side, getOrderQty(random));
 
-        // Ціна виконання береться після applyOrder, з того самого стану, що й знімок нижче.
+        // Цена исполнения берётся после applyOrder, из того же состояния, что и снимок ниже.
         const price = quote.applyOrder(order);
 
         updates.push(new MarketUpdate(

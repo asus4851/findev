@@ -1,10 +1,10 @@
-// Дзеркало бітів з ../../../market-gen-as/assembly/config/simulation-config.ts.
-// Wasm повертає з init не тексти, а набір бітів некоректних полів. Тексти формує воркер.
+// Зеркало битов из ../../../market-gen-as/assembly/config/simulation-config.ts.
+// Wasm возвращает из init не тексты, а набор битов некорректных полей. Тексты формирует воркер.
 export const INVALID_INSTRUMENT_COUNT = 1;
 export const INVALID_UPDATES_PER_BATCH = 2;
 export const INVALID_BATCH_INTERVAL_MS = 4;
 
-// Текст помилки з бітів, які повернув init у Wasm.
+// Текст ошибки из битов, которые вернул init в Wasm.
 export function describeInitErrors(errors: number): string {
     const fields: string[] = [];
     if (errors & INVALID_INSTRUMENT_COUNT) fields.push('instrumentCount');
