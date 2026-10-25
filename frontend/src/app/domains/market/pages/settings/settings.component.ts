@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormField, form, max, min, submit, validate, type SchemaPath } from '@angular/forms/signals';
 import { SIMULATION_LIMITS, type SimulationConfigField, type SimulationSettings } from '../../market.model';
-import { MarketSession } from '../../services/market-session.service';
+import { MarketSessionService } from '../../services/market-session.service';
 
 interface FieldInfo {
   key: SimulationConfigField;
@@ -32,8 +32,8 @@ function limited(path: SchemaPath<number>, field: SimulationConfigField): void {
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.css',
 })
-export class Settings {
-  private readonly session = inject(MarketSession);
+export class SettingsComponent {
+  private readonly session = inject(MarketSessionService);
 
   protected readonly fields = FIELDS;
   protected readonly applied = signal(false);

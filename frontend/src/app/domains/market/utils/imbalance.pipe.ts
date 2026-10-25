@@ -9,7 +9,7 @@ export function formatImbalance(value: number | undefined): string {
 }
 
 @Pipe({ name: 'imbalance' })
-export class Imbalance implements PipeTransform {
+export class ImbalancePipe implements PipeTransform {
   transform(value: number | undefined): string {
     return formatImbalance(value);
   }

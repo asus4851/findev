@@ -1,11 +1,11 @@
 import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { REFRESH_OPTIONS_MS, REFRESH_UNLIMITED } from '@backend/market';
-import { DataTable, type TableColumn } from '../../../../shared/components/data-table/data-table.component';
+import { DataTableComponent, type TableColumn } from '../../../../shared/components/data-table/data-table.component';
 import type { InstrumentMetrics } from '../../market.model';
-import { MarketSession, type SessionState } from '../../services/market-session.service';
-import { CentsCurrency } from '../../utils/cents-currency.pipe';
-import { Imbalance } from '../../utils/imbalance.pipe';
+import { MarketSessionService, type SessionState } from '../../services/market-session.service';
+import { CentsCurrencyPipe } from '../../utils/cents-currency.pipe';
+import { ImbalancePipe } from '../../utils/imbalance.pipe';
 
 const STATE_LABELS: Record<SessionState, string> = {
   starting: 'Starting',
@@ -14,8 +14,8 @@ const STATE_LABELS: Record<SessionState, string> = {
   error: 'Error',
 };
 
-const centsCurrency = new CentsCurrency();
-const imbalance = new Imbalance();
+const centsCurrency = new CentsCurrencyPipe();
+const imbalance = new ImbalancePipe();
 const integer = new DecimalPipe('en-US');
 
 // Колонки таблицы метрик: какое поле InstrumentMetrics, заголовок и формат отображения.
@@ -35,13 +35,13 @@ function refreshLabel(refreshMs: number): string {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [DataTable, DecimalPipe],
+  imports: [DataTableComponent, DecimalPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
-export class Dashboard {
-  protected readonly session = inject(MarketSession);
+export class DashboardComponent {
+  protected readonly session = inject(MarketSessionService);
 
   protected readonly columns = COLUMNS;
   protected readonly refreshOptions = REFRESH_OPTIONS_MS.map((value) => ({ value, label: refreshLabel(value) }));

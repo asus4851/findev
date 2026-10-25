@@ -1,13 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FakeMarketWorker, metricsRow } from '../../../../../testing/fake-market-worker';
-import { MarketSession } from '../../services/market-session.service';
+import { MarketSessionService } from '../../services/market-session.service';
 import { MARKET_WORKER_FACTORY } from '../../tokens/market-worker.token';
-import { Settings } from './settings.component';
+import { SettingsComponent } from './settings.component';
 
-describe('Settings', () => {
+describe('SettingsComponent', () => {
   let worker: FakeMarketWorker;
-  let session: MarketSession;
-  let fixture: ComponentFixture<Settings>;
+  let session: MarketSessionService;
+  let fixture: ComponentFixture<SettingsComponent>;
   let element: HTMLElement;
 
   const input = (id: string) => element.querySelector<HTMLInputElement>(`#${id}`)!;
@@ -32,9 +32,9 @@ describe('Settings', () => {
     TestBed.configureTestingModule({
       providers: [{ provide: MARKET_WORKER_FACTORY, useValue: () => worker }],
     });
-    session = TestBed.inject(MarketSession);
+    session = TestBed.inject(MarketSessionService);
     session.start();
-    fixture = TestBed.createComponent(Settings);
+    fixture = TestBed.createComponent(SettingsComponent);
     element = fixture.nativeElement;
     await fixture.whenStable();
   });

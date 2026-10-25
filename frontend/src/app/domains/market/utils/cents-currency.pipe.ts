@@ -9,7 +9,7 @@ export function formatCents(cents: number | undefined): string {
 }
 
 @Pipe({ name: 'centsCurrency' })
-export class CentsCurrency implements PipeTransform {
+export class CentsCurrencyPipe implements PipeTransform {
   transform(cents: number | undefined): string {
     return formatCents(cents);
   }

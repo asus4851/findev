@@ -18,7 +18,7 @@ export interface TableColumn<T> {
   templateUrl: './data-table.component.html',
   styleUrl: './data-table.component.css',
 })
-export class DataTable<T> {
+export class DataTableComponent<T> {
   readonly columns = input.required<TableColumn<T>[]>();
   readonly rows = input.required<T[]>();
   // Поле, которое однозначно идентифицирует строку: по нему Angular обновляет строки вместо пересоздания.

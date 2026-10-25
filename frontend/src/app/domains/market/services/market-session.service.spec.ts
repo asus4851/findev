@@ -1,57 +1,52 @@
 import { TestBed } from '@angular/core/testing';
-import { FakeMarketWorker, metricsRow } from '../../../../testing/fake-market-worker';
-import { MarketSession } from './market-session.service';
-import { MARKET_WORKER_FACTORY } from '../tokens/market-worker.token';
+import { REFRESH_DEFAULT_MS } from '@backend/market';
+import { FakeMarketApi } from '../../../../testing/fake-market-api';
+import { metricsRow } from '../../../../testing/fake-market-worker';
+import { MarketApiService } from './market-api.service';
+import { MarketSessionService } from './market-session.service';
 
 const defaults = { instrumentCount: 5, updatesPerBatch: 100, batchIntervalMs: 500 };
 
-describe('MarketSession', () => {
-  let worker: FakeMarketWorker;
-  let workersCreated: number;
-  let session: MarketSession;
+describe('MarketSessionService', () => {
+  let api: FakeMarketApi;
+  let session: MarketSessionService;
 
   beforeEach(() => {
-    worker = new FakeMarketWorker();
-    workersCreated = 0;
-    TestBed.configureTestingModule({
-      providers: [{ provide: MARKET_WORKER_FACTORY, useValue: () => (workersCreated++, worker) }],
-    });
-    session = TestBed.inject(MarketSession);
+    api = new FakeMarketApi();
+    TestBed.configureTestingModule({ providers: [{ provide: MarketApiService, useValue: api }] });
+    session = TestBed.inject(MarketSessionService);
   });
 
   describe('старт', () => {
-    it('запускает воркер с настройками по умолчанию', () => {
+    it('запускает бэкенд с настройками по умолчанию', () => {
       session.start();
 
-      expect(worker.sent).toEqual([
-        { type: 'start', runId: 1, settings: defaults, seed: expect.any(Number) },
-      ]);
+      expect(api.starts).toEqual([{ runId: 1, settings: defaults, seed: expect.any(Number) }]);
       expect(session.state()).toBe('starting');
       expect(session.settings()).toEqual(defaults);
     });
 
-    it('повторный старт не создаёт второго воркера и второго запуска', () => {
+    it('повторный старт не создаёт второго запуска', () => {
       session.start();
       session.start();
 
-      expect(workersCreated).toBe(1);
-      expect(worker.sent).toHaveLength(1);
+      expect(api.starts).toHaveLength(1);
     });
   });
 
-  describe('данные из воркера', () => {
+  describe('данные с бэкенда', () => {
     beforeEach(() => session.start());
 
     it('показывает снимок и статус текущего запуска', () => {
-      worker.emit({ type: 'snapshot', runId: 1, rows: [metricsRow('ALFA', { volume: 40 })] });
-      worker.emit({ type: 'status', runId: 1, status: 'running' });
+      api.emit({ type: 'snapshot', runId: 1, rows: [metricsRow('ALFA', { volume: 40 })] });
+      api.emit({ type: 'status', runId: 1, status: 'running' });
 
       expect(session.rows()).toEqual([metricsRow('ALFA', { volume: 40 })]);
       expect(session.state()).toBe('running');
     });
 
     it('показывает ошибку инициализации', () => {
-      worker.emit({ type: 'error', runId: 1, message: 'Cannot initialize the market generator: HTTP 404' });
+      api.emit({ type: 'error', runId: 1, message: 'Cannot initialize the market generator: HTTP 404' });
 
       expect(session.state()).toBe('error');
       expect(session.error()).toBe('Cannot initialize the market generator: HTTP 404');
@@ -61,43 +56,42 @@ describe('MarketSession', () => {
   describe('Apply', () => {
     beforeEach(() => {
       session.start();
-      worker.emit({ type: 'snapshot', runId: 1, rows: [metricsRow('ALFA', { volume: 40, lastPriceCents: 10_200 })] });
-      worker.emit({ type: 'status', runId: 1, status: 'running' });
+      api.emit({ type: 'snapshot', runId: 1, rows: [metricsRow('ALFA', { volume: 40, lastPriceCents: 10_200 })] });
+      api.emit({ type: 'status', runId: 1, status: 'running' });
     });
 
     it('начинает новый запуск с новыми настройками и очищает значения предыдущего', () => {
       const next = { instrumentCount: 3, updatesPerBatch: 50, batchIntervalMs: 200 };
       session.apply(next);
 
-      expect(worker.sent.at(-1)).toEqual({ type: 'start', runId: 2, settings: next, seed: expect.any(Number) });
+      expect(api.starts.at(-1)).toEqual({ runId: 2, settings: next, seed: expect.any(Number) });
       expect(session.settings()).toEqual(next);
       expect(session.rows()).toEqual([]);
       expect(session.state()).toBe('starting');
-      expect(workersCreated).toBe(1);
     });
 
     it('стартует новый запуск и тогда, когда предыдущий был на паузе', () => {
       session.pause();
-      worker.emit({ type: 'status', runId: 1, status: 'paused' });
+      api.emit({ type: 'status', runId: 1, status: 'paused' });
 
       session.apply(defaults);
 
-      expect(worker.sent.at(-1)).toMatchObject({ type: 'start', runId: 2 });
+      expect(api.starts.at(-1)).toMatchObject({ runId: 2 });
     });
 
     it('отбрасывает результаты предыдущего запуска', () => {
       session.apply(defaults);
 
       // Сообщения старого запуска ещё были в очереди воркера.
-      worker.emit({ type: 'snapshot', runId: 1, rows: [metricsRow('ALFA', { volume: 999 })] });
-      worker.emit({ type: 'status', runId: 1, status: 'paused' });
-      worker.emit({ type: 'error', runId: 1, message: 'stale' });
+      api.emit({ type: 'snapshot', runId: 1, rows: [metricsRow('ALFA', { volume: 999 })] });
+      api.emit({ type: 'status', runId: 1, status: 'paused' });
+      api.emit({ type: 'error', runId: 1, message: 'stale' });
 
       expect(session.rows()).toEqual([]);
       expect(session.state()).toBe('starting');
       expect(session.error()).toBeUndefined();
 
-      worker.emit({ type: 'snapshot', runId: 2, rows: [metricsRow('ALFA')] });
+      api.emit({ type: 'snapshot', runId: 2, rows: [metricsRow('ALFA')] });
       expect(session.rows()).toEqual([metricsRow('ALFA')]);
     });
 
@@ -115,58 +109,54 @@ describe('MarketSession', () => {
 
     it('отправляют команду текущего запуска только в соответствующем состоянии', () => {
       session.pause(); // ещё starting: ничего
-      expect(worker.sent).toHaveLength(1);
+      expect(api.pauses).toEqual([]);
 
-      worker.emit({ type: 'status', runId: 1, status: 'running' });
+      api.emit({ type: 'status', runId: 1, status: 'running' });
       session.resume(); // не на паузе: ничего
       session.pause();
-      expect(worker.sent.at(-1)).toEqual({ type: 'pause', runId: 1 });
+      expect(api.pauses).toEqual([1]);
+      expect(api.resumes).toEqual([]);
 
-      worker.emit({ type: 'status', runId: 1, status: 'paused' });
+      api.emit({ type: 'status', runId: 1, status: 'paused' });
       session.resume();
-      expect(worker.sent.at(-1)).toEqual({ type: 'resume', runId: 1 });
-      expect(worker.sent).toHaveLength(3);
+      expect(api.resumes).toEqual([1]);
     });
 
     it('пауза не очищает значения', () => {
-      worker.emit({ type: 'status', runId: 1, status: 'running' });
-      worker.emit({ type: 'snapshot', runId: 1, rows: [metricsRow('ALFA', { volume: 40 })] });
+      api.emit({ type: 'status', runId: 1, status: 'running' });
+      api.emit({ type: 'snapshot', runId: 1, rows: [metricsRow('ALFA', { volume: 40 })] });
       session.pause();
-      worker.emit({ type: 'status', runId: 1, status: 'paused' });
+      api.emit({ type: 'status', runId: 1, status: 'paused' });
 
       expect(session.rows()).toEqual([metricsRow('ALFA', { volume: 40 })]);
       expect(session.state()).toBe('paused');
     });
   });
 
-  describe('ошибки и освобождение ресурсов', () => {
-    it('показывает понятную ошибку, если воркер не удалось создать', () => {
-      TestBed.resetTestingModule();
-      TestBed.configureTestingModule({
-        providers: [{ provide: MARKET_WORKER_FACTORY, useValue: () => { throw new Error('Workers are not supported'); } }],
-      });
-      const failing = TestBed.inject(MarketSession);
+  describe('частота обновления таблицы', () => {
+    it('по умолчанию 0,5 с и ничего не отправляет бэкенду', () => {
+      session.start();
 
-      failing.start();
-
-      expect(failing.state()).toBe('error');
-      expect(failing.error()).toBe('Cannot start the market worker: Workers are not supported');
+      expect(session.refreshMs()).toBe(REFRESH_DEFAULT_MS);
+      expect(api.refreshes).toEqual([]);
     });
 
-    it('показывает ошибку, если воркер упал', () => {
+    it('новая частота уходит на бэкенд без нового запуска и без очистки значений', () => {
       session.start();
-      worker.onerror?.({ message: 'Script error' } as ErrorEvent);
+      api.emit({ type: 'snapshot', runId: 1, rows: [metricsRow('ALFA', { volume: 40 })] });
 
-      expect(session.state()).toBe('error');
-      expect(session.error()).toBe('Market worker failed: Script error');
+      session.setRefresh(0);
+
+      expect(api.refreshes).toEqual([0]);
+      expect(api.starts).toHaveLength(1);
+      expect(session.rows()).toEqual([metricsRow('ALFA', { volume: 40 })]);
+      expect(session.refreshMs()).toBe(0);
     });
 
-    it('освобождает воркер, когда приложение уничтожается', () => {
-      session.start();
-      TestBed.resetTestingModule();
+    it('та же частота повторно не отправляется', () => {
+      session.setRefresh(REFRESH_DEFAULT_MS);
 
-      expect(worker.sent.at(-1)).toEqual({ type: 'dispose' });
-      expect(worker.terminated).toBe(true);
+      expect(api.refreshes).toEqual([]);
     });
   });
 });
