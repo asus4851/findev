@@ -15,8 +15,8 @@ describe('startSimulation', () => {
     });
     afterEach(() => vi.useRealTimers());
 
-    it('раз на batchIntervalMs видає батч з updatesPerBatch оновлень', () => {
-        const config = new SimulationConfig(); // 100 оновлень кожні 500 мс
+    it('раз в batchIntervalMs выдаёт батч из updatesPerBatch обновлений', () => {
+        const config = new SimulationConfig(); // 100 обновлений каждые 500 мс
         const onBatch = vi.fn();
         const stop = startSimulation(makeQuotes(config.instrumentCount, random), config, random, onBatch);
 
@@ -27,14 +27,14 @@ describe('startSimulation', () => {
         expect(onBatch).toHaveBeenCalledTimes(1);
         expect(onBatch.mock.calls[0][0]).toHaveLength(100);
 
-        // За секунду 2 батчі по 100: 200 оновлень на секунду загалом, як у прикладі з ТЗ.
+        // За секунду 2 батча по 100: 200 обновлений в секунду всего, как в примере из ТЗ.
         vi.advanceTimersByTime(1_000);
         expect(onBatch).toHaveBeenCalledTimes(3);
 
         stop();
     });
 
-    it('після зупинки батчі більше не генеруються', () => {
+    it('после остановки батчи больше не генерируются', () => {
         const config = new SimulationConfig();
         const onBatch = vi.fn();
         const stop = startSimulation(makeQuotes(config.instrumentCount, random), config, random, onBatch);
@@ -46,7 +46,7 @@ describe('startSimulation', () => {
         expect(onBatch).toHaveBeenCalledTimes(2);
     });
 
-    it('з некоректними налаштуваннями не запускається і пояснює чому', () => {
+    it('с некорректными настройками не запускается и объясняет почему', () => {
         const config = Object.assign(new SimulationConfig(), { updatesPerBatch: 0 });
         const onBatch = vi.fn();
 

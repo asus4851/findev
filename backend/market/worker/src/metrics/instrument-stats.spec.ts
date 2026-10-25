@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { InstrumentStats } from './instrument-stats';
 
-// Стакан з прикладу ТЗ: bid $101.96, ask $102.00, 600 на купівлю, 400 на продаж.
+// Стакан из примера ТЗ: bid $101.96, ask $102.00, 600 на покупку, 400 на продажу.
 function applyTrade(stats: InstrumentStats, priceCents: number, tradeQuantity: number, bidQuantity = 600, askQuantity = 400): void {
     stats.applyTrade(priceCents, tradeQuantity, 10_196, 10_200, bidQuantity, askQuantity);
 }
 
 describe('InstrumentStats', () => {
-    it('рахує приклад з ТЗ: 10 по $100 і 30 по $102', () => {
+    it('считает пример из ТЗ: 10 по $100 и 30 по $102', () => {
         const stats = new InstrumentStats('ALFA');
         applyTrade(stats, 10_000, 10);
         applyTrade(stats, 10_200, 30);
@@ -22,7 +22,7 @@ describe('InstrumentStats', () => {
         });
     });
 
-    it('до першої угоди всі значення недоступні, а обсяг нульовий', () => {
+    it('до первой сделки все значения недоступны, а объём нулевой', () => {
         expect(new InstrumentStats('ALFA').toMetrics()).toEqual({
             symbol: 'ALFA',
             lastPriceCents: undefined,
@@ -33,7 +33,7 @@ describe('InstrumentStats', () => {
         });
     });
 
-    it('стакан бере з останньої угоди, а суми накопичує з усіх', () => {
+    it('стакан берёт из последней сделки, а суммы накапливает из всех', () => {
         const stats = new InstrumentStats('ALFA');
         stats.applyTrade(10_000, 10, 9_990, 10_010, 100, 300);
         stats.applyTrade(10_020, 5, 10_015, 10_025, 500, 500);
@@ -47,14 +47,14 @@ describe('InstrumentStats', () => {
         expect(stats.notionalCents).toBe(10_000 * 10 + 10_020 * 5);
     });
 
-    it('дисбаланс недоступний, коли в стакані нуль на обох боках', () => {
+    it('дисбаланс недоступен, когда в стакане ноль на обеих сторонах', () => {
         const stats = new InstrumentStats('ALFA');
         applyTrade(stats, 10_000, 5, 0, 0);
 
         expect(stats.toMetrics().imbalance).toBeUndefined();
     });
 
-    it('дисбаланс −1 і +1, коли один бік порожній', () => {
+    it('дисбаланс −1 и +1, когда одна сторона пустая', () => {
         const onlyAsks = new InstrumentStats('A');
         applyTrade(onlyAsks, 10_000, 5, 0, 300);
         const onlyBids = new InstrumentStats('B');
@@ -64,14 +64,14 @@ describe('InstrumentStats', () => {
         expect(onlyBids.toMetrics().imbalance).toBe(1);
     });
 
-    it('кількості в стакані не входять в обсяг, рахується лише кількість угод', () => {
+    it('количества в стакане не входят в объём, считается только количество сделок', () => {
         const stats = new InstrumentStats('ALFA');
         applyTrade(stats, 10_000, 7, 999, 999);
 
         expect(stats.toMetrics().volume).toBe(7);
     });
 
-    it('VWAP не округлюється до показу', () => {
+    it('VWAP не округляется до отображения', () => {
         const stats = new InstrumentStats('ALFA');
         applyTrade(stats, 10_000, 1);
         applyTrade(stats, 10_001, 2);

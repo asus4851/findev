@@ -6,8 +6,8 @@ import { getPriceDelta, getSpread, getStartPrice } from './price';
 const repeat = <T>(times: number, fn: () => T): T[] => Array.from({ length: times }, fn);
 
 describe('getPriceDelta', () => {
-    it('buy зсуває ціну вгору на 0,05%..0,15% у цілих центах', () => {
-        // $100.00: 5..15 б.п. дають 5..15 центів.
+    it('buy сдвигает цену вверх на 0,05%..0,15% в целых центах', () => {
+        // $100.00: 5..15 б.п. дают 5..15 центов.
         const random = new RandomGenerator(1);
         const prices = repeat(1_000, () => getPriceDelta(random, 10_000, 'buy'));
 
@@ -16,7 +16,7 @@ describe('getPriceDelta', () => {
         expect(Math.max(...prices)).toBe(10_015);
     });
 
-    it('sell зсуває ціну вниз на 0,05%..0,15%', () => {
+    it('sell сдвигает цену вниз на 0,05%..0,15%', () => {
         const random = new RandomGenerator(1);
         const prices = repeat(1_000, () => getPriceDelta(random, 10_000, 'sell'));
 
@@ -24,8 +24,8 @@ describe('getPriceDelta', () => {
         expect(Math.max(...prices)).toBe(9_995);
     });
 
-    it('на дешевому інструменті зсув щонайменше 1 цент', () => {
-        // $1.00: 0,15% це 0,15 цента, округлення дало б 0.
+    it('на дешёвом инструменте сдвиг минимум 1 цент', () => {
+        // $1.00: 0,15% — это 0,15 цента, округление дало бы 0.
         const random = new RandomGenerator(1);
 
         expect(repeat(100, () => getPriceDelta(random, 100, 'buy'))).toEqual(repeat(100, () => 101));
@@ -34,7 +34,7 @@ describe('getPriceDelta', () => {
 });
 
 describe('getSpread', () => {
-    it('ask вище за ціну на 0,01%..0,05%, bid нижче', () => {
+    it('ask выше цены на 0,01%..0,05%, bid ниже', () => {
         const random = new RandomGenerator(1);
         const asks = repeat(1_000, () => getSpread(random, 10_000));
         const bids = repeat(1_000, () => getSpread(random, 10_000, false));
@@ -45,7 +45,7 @@ describe('getSpread', () => {
         expect(Math.max(...bids)).toBe(9_999);
     });
 
-    it('на дешевому інструменті відступ щонайменше 1 цент', () => {
+    it('на дешёвом инструменте отступ минимум 1 цент', () => {
         const random = new RandomGenerator(1);
 
         expect(getSpread(random, 100)).toBe(101);
@@ -54,7 +54,7 @@ describe('getSpread', () => {
 });
 
 describe('getStartPrice', () => {
-    it('повертає ціну в діапазоні початкових цін', () => {
+    it('возвращает цену в диапазоне начальных цен', () => {
         const random = new RandomGenerator(1);
         const prices = repeat(1_000, () => getStartPrice(random));
 

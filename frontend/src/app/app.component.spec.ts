@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 import { App } from './app.component';
 
 describe('App', () => {
-  it('показує навігацію між дашбордом і налаштуваннями', async () => {
+  it('показывает навигацию между дашбордом и настройками', async () => {
     TestBed.configureTestingModule({ providers: [provideRouter([])] });
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();

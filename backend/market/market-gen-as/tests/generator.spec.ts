@@ -1,8 +1,8 @@
-// Тести скомпільованого Wasm-модуля. Запуск: npm test (спершу збирає build/market_gen.wasm).
+// Тесты скомпилированного Wasm-модуля. Запуск: npm test (сначала собирает build/market_gen.wasm).
 //
-// Головна перевірка тут це паритет: з тим самим seed і налаштуваннями Wasm має видавати
-// рівно ті самі оновлення, що й еталонна TypeScript-версія з ../market-gen-ts.
-// Решта тестів дублює інваріанти ТЗ уже для Wasm.
+// Главная проверка здесь — паритет: с тем же seed и настройками Wasm должен выдавать
+// ровно те же обновления, что и эталонная TypeScript-версия из ../market-gen-ts.
+// Остальные тесты дублируют инварианты ТЗ уже для Wasm.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { Quote } from '../../market-gen-ts/src/model/quote';
@@ -33,12 +33,12 @@ interface WasmExports {
 
 const wasmModule = new WebAssembly.Module(readFileSync(new URL('../build/market_gen.wasm', import.meta.url)));
 
-// Новий екземпляр модуля на кожен тест, щоб тести не ділили стан.
+// Новый экземпляр модуля на каждый тест, чтобы тесты не делили состояние.
 function load() {
     const x = new WebAssembly.Instance(wasmModule, {}).exports as unknown as WasmExports;
     const fields = x.FIELDS.value as number;
 
-    // Читає батч із буфера Wasm і одразу копіює в об'єкти, як це робитиме воркер.
+    // Читает батч из буфера Wasm и сразу копирует в объекты, как это делал бы воркер.
     function nextBatch(size: number): Update[] {
         const pointer = x.nextBatch();
         expect(pointer).not.toBe(0);
@@ -61,7 +61,7 @@ function load() {
     return { x, fields, nextBatch };
 }
 
-// Запуск TypeScript-версії з тими самими параметрами, для порівняння.
+// Запуск TypeScript-версии с теми же параметрами, для сравнения.
 function runTypeScript(seed: number, instruments: number, size: number, batches: number): Update[] {
     const random = new RandomGenerator(seed);
     const quotes = Array.from({ length: instruments }, (_, i) => new Quote(i, random));
@@ -77,12 +77,12 @@ function runWasm(seed: number, instruments: number, size: number, batches: numbe
 }
 
 describe('Wasm-модуль', () => {
-    it('не потребує імпортів і має сім полів на оновлення', () => {
+    it('не требует импортов и имеет семь полей на обновление', () => {
         expect(WebAssembly.Module.imports(wasmModule)).toEqual([]);
         expect(load().fields).toBe(7);
     });
 
-    it('без init не генерує нічого, після dispose теж', () => {
+    it('без init ничего не генерирует, после dispose тоже', () => {
         const { x } = load();
         expect(x.nextBatch()).toBe(0);
 
@@ -94,19 +94,19 @@ describe('Wasm-модуль', () => {
     });
 });
 
-describe('паритет з TypeScript-версією', () => {
+describe('паритет с TypeScript-версией', () => {
     it.each([
         { seed: 1, instruments: 5, size: 100, batches: 20 },
         { seed: 42, instruments: 50, size: 1000, batches: 10 },
         { seed: 2026, instruments: 1, size: 1, batches: 500 },
         { seed: 4_294_967_295, instruments: 7, size: 333, batches: 5 },
-    ])('seed $seed, $instruments інструментів, батч $size: оновлення ідентичні', ({ seed, instruments, size, batches }) => {
+    ])('seed $seed, $instruments инструментов, батч $size: обновления идентичны', ({ seed, instruments, size, batches }) => {
         expect(runWasm(seed, instruments, size, batches)).toEqual(runTypeScript(seed, instruments, size, batches));
     });
 });
 
-describe('перевірка налаштувань', () => {
-    it('приймає межі з ТЗ і відхиляє значення за ними', () => {
+describe('проверка настроек', () => {
+    it('принимает границы из ТЗ и отклоняет значения за ними', () => {
         const { x } = load();
         const bit = {
             instruments: x.INVALID_INSTRUMENT_COUNT.value as number,
@@ -125,14 +125,14 @@ describe('перевірка налаштувань', () => {
         expect(x.validateConfig(0, 0, 0)).toBe(bit.instruments | bit.batch | bit.interval);
     });
 
-    it('init з некоректними налаштуваннями повертає помилки і не змінює поточний запуск', () => {
+    it('init с некорректными настройками возвращает ошибки и не меняет текущий запуск', () => {
         const wasm = load();
         wasm.x.init(3, 10, 500, 7);
         const before = wasm.nextBatch(10);
 
         expect(wasm.x.init(0, 10, 500, 7)).toBe(wasm.x.INVALID_INSTRUMENT_COUNT.value);
 
-        // Попередній запуск живий: генерує далі, ніби невдалого init не було.
+        // Предыдущий запуск жив: генерирует дальше, будто неудачного init не было.
         const reference = load();
         reference.x.init(3, 10, 500, 7);
         reference.nextBatch(10);
@@ -141,8 +141,8 @@ describe('перевірка налаштувань', () => {
     });
 });
 
-describe('інваріанти ТЗ у Wasm', () => {
-    it('батч рівно запитаного розміру, оновлення коректні', () => {
+describe('инварианты ТЗ в Wasm', () => {
+    it('батч ровно запрошенного размера, обновления корректны', () => {
         for (const size of [1, 7, 100, 1000]) {
             expect(runWasm(1, 5, size, 1)).toHaveLength(size);
         }
@@ -158,11 +158,11 @@ describe('інваріанти ТЗ у Wasm', () => {
         expect(broken).toEqual([]);
     });
 
-    it('стан зберігається між батчами: два по 50 дорівнюють одному на 100', () => {
+    it('состояние сохраняется между батчами: два по 50 равны одному на 100', () => {
         expect(runWasm(3, 5, 50, 2)).toEqual(runWasm(3, 5, 100, 1));
     });
 
-    it('новий init повністю скидає попередній запуск', () => {
+    it('новый init полностью сбрасывает предыдущий запуск', () => {
         const wasm = load();
         wasm.x.init(5, 100, 500, 9);
         wasm.nextBatch(100);
@@ -171,7 +171,7 @@ describe('інваріанти ТЗ у Wasm', () => {
         expect(wasm.nextBatch(100)).toEqual(runWasm(9, 5, 100, 1));
     });
 
-    it('пам\'ять не росте безмежно за тривалої роботи', () => {
+    it('память не растёт бесконечно при длительной работе', () => {
         const wasm = load();
         wasm.x.init(50, 1000, 50, 1);
         for (let i = 0; i < 300; i++) wasm.x.nextBatch();
@@ -179,7 +179,7 @@ describe('інваріанти ТЗ у Wasm', () => {
 
         for (let i = 0; i < 2_000; i++) wasm.x.nextBatch();
 
-        // 2 000 000 оновлень: збирач сміття звільняє ордери й оновлення, пам'ять не росте.
+        // 2 000 000 обновлений: сборщик мусора освобождает ордера и обновления, память не растёт.
         expect(wasm.x.memory.buffer.byteLength).toBe(afterWarmUp);
     });
 });

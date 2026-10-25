@@ -8,7 +8,7 @@ import { RandomGenerator } from './utils/random-generator';
 const makeQuotes = (count: number, random: RandomGenerator) =>
     Array.from({ length: count }, (_, index) => new Quote(index, random));
 
-// Фіксований seed: і квоти, і батчі детерміновані.
+// Фиксированный seed: и котировки, и батчи детерминированы.
 function run(seed: number, instruments: number, batches: number, size: number): MarketUpdate[] {
     const random = new RandomGenerator(seed);
     const quotes = makeQuotes(instruments, random);
@@ -16,7 +16,7 @@ function run(seed: number, instruments: number, batches: number, size: number): 
 }
 
 describe('generateBatch', () => {
-    it('повертає рівно запитану кількість оновлень', () => {
+    it('возвращает ровно запрошенное количество обновлений', () => {
         const random = new RandomGenerator(1);
         const quotes = makeQuotes(5, random);
 
@@ -25,27 +25,27 @@ describe('generateBatch', () => {
         }
     });
 
-    it('кожне оновлення відповідає інваріантам ТЗ', () => {
+    it('каждое обновление соответствует инвариантам ТЗ', () => {
         const updates = run(42, 20, 100, 1000);
 
         const isValid = (u: MarketUpdate) =>
-            // Цілі центи і додатні ціни.
+            // Целые центы и положительные цены.
             Number.isInteger(u.priceCents) && Number.isInteger(u.bidCents) && Number.isInteger(u.askCents)
             && u.priceCents > 0 && u.bidCents > 0
-            // bid нижчий за ask.
+            // bid ниже ask.
             && u.bidCents < u.askCents
-            // Ціна угоди це bid або ask цього ж оновлення.
+            // Цена сделки — это bid или ask этого же обновления.
             && (u.priceCents === u.bidCents || u.priceCents === u.askCents)
-            // Кількість угоди додатна, кількості в стакані невід'ємні.
+            // Количество сделки положительное, количества в стакане неотрицательные.
             && u.tradeQuantity >= minOrderQty && u.tradeQuantity <= maxOrderQty
             && u.bidQuantity >= 0 && u.askQuantity >= 0;
 
-        // Один expect на всі 100 000 оновлень: у разі помилки видно саме ті, що порушили правило.
+        // Один expect на все 100 000 обновлений: в случае ошибки видны именно те, что нарушили правило.
         expect(updates).toHaveLength(100_000);
         expect(updates.filter((u) => !isValid(u))).toEqual([]);
     });
 
-    it('усі інструменти отримують оновлення, і є і купівлі, і продажі', () => {
+    it('все инструменты получают обновления, и есть и покупки, и продажи', () => {
         const updates = run(42, 20, 10, 1000);
 
         expect(new Set(updates.map((u) => u.instrument)).size).toBe(20);
@@ -53,24 +53,24 @@ describe('generateBatch', () => {
         expect(updates.some((u) => u.priceCents === u.bidCents)).toBe(true);
     });
 
-    it('інструмент може траплятися в батчі кілька разів', () => {
+    it('инструмент может встречаться в батче несколько раз', () => {
         const random = new RandomGenerator(1);
         const updates = generateBatch(makeQuotes(1, random), 100, random);
 
         expect(updates.every((u) => u.instrument === 0)).toBe(true);
     });
 
-    it('однаковий seed дає однакові дані, інший seed інші', () => {
+    it('одинаковый seed даёт одинаковые данные, другой seed другие', () => {
         expect(run(7, 5, 1, 200)).toEqual(run(7, 5, 1, 200));
         expect(run(8, 5, 1, 200)).not.toEqual(run(7, 5, 1, 200));
     });
 
-    it('стан інструментів зберігається між батчами', () => {
-        // Два батчі по 50 мають дорівнювати одному батчу на 100.
+    it('состояние инструментов сохраняется между батчами', () => {
+        // Два батча по 50 должны равняться одному батчу на 100.
         expect(run(3, 5, 2, 50)).toEqual(run(3, 5, 1, 100));
     });
 
-    it('ціни тримаються, поки рівня вистачає, і зсуваються в бік угоди після його вичерпання', () => {
+    it('цены держатся, пока уровня хватает, и сдвигаются в сторону сделки после его исчерпания', () => {
         const updates = run(11, 3, 20, 1000);
         const previous = new Map<number, MarketUpdate>();
         let priceMoves = 0;
@@ -80,7 +80,7 @@ describe('generateBatch', () => {
             const isBuy = u.priceCents === u.askCents;
 
             if (p && p.bidCents === u.bidCents && p.askCents === u.askCents) {
-                // Рівень живий: зменшився лише бік угоди, рівно на її кількість.
+                // Уровень жив: уменьшилась лишь сторона сделки, ровно на её количество.
                 if (isBuy) {
                     expect(u.askQuantity).toBe(p.askQuantity - u.tradeQuantity);
                     expect(u.bidQuantity).toBe(p.bidQuantity);
@@ -89,7 +89,7 @@ describe('generateBatch', () => {
                     expect(u.askQuantity).toBe(p.askQuantity);
                 }
             } else if (p) {
-                // Рівень пройдено: ціна рухнулась у бік угоди.
+                // Уровень пройден: цена сдвинулась в сторону сделки.
                 priceMoves++;
                 if (isBuy) expect(u.askCents).toBeGreaterThan(p.askCents);
                 else expect(u.bidCents).toBeLessThan(p.bidCents);

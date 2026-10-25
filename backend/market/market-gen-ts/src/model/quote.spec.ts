@@ -21,8 +21,8 @@ describe('Quote', () => {
         random = new RandomGenerator(1);
     });
 
-    describe('початковий стан', () => {
-        it('будує стакан навколо заданої ціни', () => {
+    describe('начальное состояние', () => {
+        it('строит стакан вокруг заданной цены', () => {
             const quote = new Quote(3, random, 10_000);
 
             expect(quote.instrument).toBe(3);
@@ -35,7 +35,7 @@ describe('Quote', () => {
             expect(quote.bidQty).toBeLessThanOrEqual(maxQty);
         });
 
-        it('без заданої ціни стартує з діапазону початкових цін', () => {
+        it('без заданной цены стартует из диапазона начальных цен', () => {
             const quote = new Quote(0, random);
 
             expect(quote.price).toBeGreaterThanOrEqual(START_PRICE_MIN_CENTS);
@@ -43,8 +43,8 @@ describe('Quote', () => {
         });
     });
 
-    describe('applyOrder, коли рівня вистачає', () => {
-        it('покупець бере з ask за ціною ask, ціни не змінюються', () => {
+    describe('applyOrder, когда уровня хватает', () => {
+        it('покупатель берёт из ask по цене ask, цены не меняются', () => {
             const quote = new Quote(0, random, 10_000);
             quote.askQty = 500;
             const { bid, ask, bidQty } = quote;
@@ -57,7 +57,7 @@ describe('Quote', () => {
             expect([quote.bid, quote.ask]).toEqual([bid, ask]);
         });
 
-        it('продавець віддає в bid за ціною bid, ціни не змінюються', () => {
+        it('продавец отдаёт в bid по цене bid, цены не меняются', () => {
             const quote = new Quote(0, random, 10_000);
             quote.bidQty = 600;
             const { bid, ask, askQty } = quote;
@@ -70,7 +70,7 @@ describe('Quote', () => {
             expect([quote.bid, quote.ask]).toEqual([bid, ask]);
         });
 
-        it('ордер рівно на всю кількість лишає рівень порожнім без зсуву ціни', () => {
+        it('ордер ровно на всё количество оставляет уровень пустым без сдвига цены', () => {
             const quote = new Quote(0, random, 10_000);
             quote.askQty = 40;
             const { ask } = quote;
@@ -80,8 +80,8 @@ describe('Quote', () => {
         });
     });
 
-    describe('applyOrder, коли рівня не вистачає', () => {
-        it('покупець проходить рівень: ціна зсувається від старого ask вгору на 5..15 б.п.', () => {
+    describe('applyOrder, когда уровня не хватает', () => {
+        it('покупатель проходит уровень: цена сдвигается от старого ask вверх на 5..15 б.п.', () => {
             const quote = new Quote(0, random, 10_000);
             quote.askQty = 10;
             const oldAsk = quote.ask;
@@ -97,7 +97,7 @@ describe('Quote', () => {
             expect(quote.bidQty).toBeGreaterThanOrEqual(minQty);
         });
 
-        it('продавець проходить рівень: ціна зсувається від старого bid вниз на 5..15 б.п.', () => {
+        it('продавец проходит уровень: цена сдвигается от старого bid вниз на 5..15 б.п.', () => {
             const quote = new Quote(0, random, 10_000);
             quote.bidQty = 10;
             const oldBid = quote.bid;
@@ -112,8 +112,8 @@ describe('Quote', () => {
         });
     });
 
-    describe('межі ціни', () => {
-        it('ціна і bid не опускаються нижче 1 цента навіть під постійними продажами', () => {
+    describe('границы цены', () => {
+        it('цена и bid не опускаются ниже 1 цента даже при постоянных продажах', () => {
             const quote = new Quote(0, random, 2);
 
             for (let i = 0; i < 5_000; i++) {
@@ -124,7 +124,7 @@ describe('Quote', () => {
             expect(quote.price).toBe(MIN_PRICE_CENTS);
         });
 
-        it('ціна не піднімається вище MAX_PRICE_CENTS і вміщається в i32', () => {
+        it('цена не поднимается выше MAX_PRICE_CENTS и помещается в i32', () => {
             const quote = new Quote(0, random, MAX_PRICE_CENTS - 10);
 
             for (let i = 0; i < 5_000; i++) {

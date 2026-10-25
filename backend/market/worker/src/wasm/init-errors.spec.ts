@@ -7,7 +7,7 @@ import {
 } from './init-errors';
 
 describe('describeInitErrors', () => {
-    it('називає поле за кожним бітом', () => {
+    it('называет поле по каждому биту', () => {
         expect(describeInitErrors(INVALID_INSTRUMENT_COUNT))
             .toBe('Market generator rejected the settings: instrumentCount out of range');
         expect(describeInitErrors(INVALID_UPDATES_PER_BATCH))
@@ -16,12 +16,12 @@ describe('describeInitErrors', () => {
             .toBe('Market generator rejected the settings: batchIntervalMs out of range');
     });
 
-    it('перелічує всі некоректні поля одразу, у порядку налаштувань', () => {
+    it('перечисляет все некорректные поля сразу, в порядке настроек', () => {
         expect(describeInitErrors(INVALID_BATCH_INTERVAL_MS | INVALID_INSTRUMENT_COUNT))
             .toBe('Market generator rejected the settings: instrumentCount, batchIntervalMs out of range');
     });
 
-    it('біти незалежні: кожен займає окремий розряд', () => {
+    it('биты независимы: каждый занимает отдельный разряд', () => {
         expect([INVALID_INSTRUMENT_COUNT, INVALID_UPDATES_PER_BATCH, INVALID_BATCH_INTERVAL_MS]).toEqual([1, 2, 4]);
     });
 });

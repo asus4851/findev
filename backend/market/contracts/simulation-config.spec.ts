@@ -8,7 +8,7 @@ const invalidFields = (config: SimulationConfig) =>
     validateSimulationConfig(config).map((error) => error.field);
 
 describe('SimulationConfig', () => {
-    it('має значення за замовчуванням з ТЗ, і вони коректні', () => {
+    it('имеет значения по умолчанию из ТЗ, и они корректны', () => {
         const config = new SimulationConfig();
 
         expect(config).toMatchObject({ instrumentCount: 5, updatesPerBatch: 100, batchIntervalMs: 500 });
@@ -17,7 +17,7 @@ describe('SimulationConfig', () => {
 });
 
 describe('validateSimulationConfig', () => {
-    it('приймає мінімальні і максимальні значення з ТЗ', () => {
+    it('принимает минимальные и максимальные значения из ТЗ', () => {
         const min = configWith({ instrumentCount: 1, updatesPerBatch: 1, batchIntervalMs: 50 });
         const max = configWith({ instrumentCount: 50, updatesPerBatch: 1000, batchIntervalMs: 2000 });
 
@@ -26,7 +26,7 @@ describe('validateSimulationConfig', () => {
     });
 
     it.each(Object.keys(SIMULATION_LIMITS) as (keyof SimulationConfig)[])(
-        'відхиляє %s нижче мінімуму і вище максимуму',
+        'отклоняет %s ниже минимума и выше максимума',
         (field) => {
             const { min, max } = SIMULATION_LIMITS[field];
 
@@ -35,7 +35,7 @@ describe('validateSimulationConfig', () => {
         },
     );
 
-    it('відхиляє нецілі значення', () => {
+    it('отклоняет нецелые значения', () => {
         const errors = validateSimulationConfig(configWith({ updatesPerBatch: 2.5 }));
 
         expect(errors).toEqual([
@@ -43,12 +43,12 @@ describe('validateSimulationConfig', () => {
         ]);
     });
 
-    it('відхиляє NaN і нескінченність', () => {
+    it('отклоняет NaN и бесконечность', () => {
         expect(invalidFields(configWith({ instrumentCount: Number.NaN }))).toEqual(['instrumentCount']);
         expect(invalidFields(configWith({ batchIntervalMs: Number.POSITIVE_INFINITY }))).toEqual(['batchIntervalMs']);
     });
 
-    it('повертає всі помилки одразу', () => {
+    it('возвращает все ошибки сразу', () => {
         const config = configWith({ instrumentCount: 0, updatesPerBatch: 1001, batchIntervalMs: 49 });
 
         expect(invalidFields(config)).toEqual(['instrumentCount', 'updatesPerBatch', 'batchIntervalMs']);

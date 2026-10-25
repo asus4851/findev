@@ -3,8 +3,8 @@ import type { FromWorkerMessage, SimulationSettings, ToWorkerMessage } from '../
 import { MarketSimulation } from './market-simulation';
 import type { WasmExports } from './wasm/wasm-exports';
 
-// Підробний Wasm: кожен батч складається з угод першого інструмента, 10 штук по $100.
-// Справжній генератор перевіряють тести в backend/market/market-gen-as.
+// Поддельный Wasm: каждый батч состоит из сделок первого инструмента, 10 штук по $100.
+// Настоящий генератор проверяют тесты в backend/market/market-gen-as.
 const POINTER = 8;
 const TRADE_QUANTITY = 10;
 
@@ -37,9 +37,9 @@ class FakeWasm implements WasmExports {
     }
 }
 
-// Один батч на інструмент за 500 мс: так легко рахувати угоди.
+// Один батч на инструмент за 500 мс: так легко считать сделки.
 const settings: SimulationSettings = { instrumentCount: 2, updatesPerBatch: 1, batchIntervalMs: 500 };
-// 20 батчів за секунду: частіше, ніж за замовчуванням оновлюється таблиця.
+// 20 батчей в секунду: чаще, чем по умолчанию обновляется таблица.
 const fast: SimulationSettings = { ...settings, batchIntervalMs: 50 };
 
 describe('MarketSimulation', () => {
@@ -67,7 +67,7 @@ describe('MarketSimulation', () => {
     });
 
     describe('запуск', () => {
-        it('start ініціалізує Wasm, одразу надсилає порожній знімок і генерує батчі за інтервалом', () => {
+        it('start инициализирует Wasm, сразу отправляет пустой снимок и генерирует батчи по интервалу', () => {
             send({ type: 'start', runId: 1, settings, seed: 42 });
 
             expect(wasm.initCalls).toEqual([[2, 1, 500, 42]]);
@@ -83,13 +83,13 @@ describe('MarketSimulation', () => {
             expect(lastVolume()).toBe(3 * TRADE_QUANTITY);
         });
 
-        it('seed передається у Wasm як беззнакове 32-бітне число', () => {
+        it('seed передаётся в Wasm как беззнаковое 32-битное число', () => {
             send({ type: 'start', runId: 1, settings, seed: -1 });
 
             expect(wasm.initCalls[0][3]).toBe(0xffff_ffff);
         });
 
-        it('новий start скидає значення, стартує навіть з паузи і використовує новий runId', () => {
+        it('новый start сбрасывает значения, стартует даже с паузы и использует новый runId', () => {
             send({ type: 'start', runId: 1, settings, seed: 1 });
             vi.advanceTimersByTime(1_000);
             send({ type: 'pause', runId: 1 });
@@ -105,7 +105,7 @@ describe('MarketSimulation', () => {
             expect(lastVolume()).toBe(TRADE_QUANTITY);
         });
 
-        it('після нового start таймер попереднього запуску нічого не генерує і не надсилає', () => {
+        it('после нового start таймер предыдущего запуска ничего не генерирует и не отправляет', () => {
             send({ type: 'start', runId: 1, settings, seed: 1 });
             send({ type: 'start', runId: 2, settings: { ...settings, batchIntervalMs: 2_000 }, seed: 2 });
             messages = [];
@@ -117,8 +117,8 @@ describe('MarketSimulation', () => {
         });
     });
 
-    describe('пауза і Resume', () => {
-        it('пауза зупиняє генерацію і зберігає значення', () => {
+    describe('пауза и Resume', () => {
+        it('пауза останавливает генерацию и сохраняет значения', () => {
             send({ type: 'start', runId: 1, settings, seed: 1 });
             vi.advanceTimersByTime(1_000);
             send({ type: 'pause', runId: 1 });
@@ -130,9 +130,9 @@ describe('MarketSimulation', () => {
             expect(statuses()).toEqual(['running', 'paused']);
         });
 
-        it('пауза одразу надсилає угоди, яких ще не було в знімку', () => {
+        it('пауза сразу отправляет сделки, которых ещё не было в снимке', () => {
             send({ type: 'start', runId: 1, settings: fast, seed: 1 });
-            vi.advanceTimersByTime(300);              // 6 батчів, знімок пішов лише з першим
+            vi.advanceTimersByTime(300);              // 6 батчей, снимок ушёл только с первым
             expect(lastVolume()).toBe(TRADE_QUANTITY);
 
             send({ type: 'pause', runId: 1 });
@@ -141,11 +141,11 @@ describe('MarketSimulation', () => {
             expect(messages.at(-1)).toEqual({ type: 'status', runId: 1, status: 'paused' });
         });
 
-        it('Resume продовжує з тих самих значень і не догенеровує час паузи', () => {
+        it('Resume продолжает с тех же значений и не догенерирует время паузы', () => {
             send({ type: 'start', runId: 1, settings, seed: 1 });
-            vi.advanceTimersByTime(1_000);              // 2 батчі
+            vi.advanceTimersByTime(1_000);              // 2 батча
             send({ type: 'pause', runId: 1 });
-            vi.advanceTimersByTime(60_000);             // хвилина паузи
+            vi.advanceTimersByTime(60_000);             // минута паузы
             send({ type: 'resume', runId: 1 });
             vi.advanceTimersByTime(500);                // 1 батч
 
@@ -154,7 +154,7 @@ describe('MarketSimulation', () => {
             expect(statuses()).toEqual(['running', 'paused', 'running']);
         });
 
-        it('повторні pause і resume нічого не змінюють', () => {
+        it('повторные pause и resume ничего не меняют', () => {
             send({ type: 'start', runId: 1, settings, seed: 1 });
             send({ type: 'resume', runId: 1 });
             send({ type: 'pause', runId: 1 });
@@ -163,7 +163,7 @@ describe('MarketSimulation', () => {
             expect(statuses()).toEqual(['running', 'paused']);
         });
 
-        it('pause зі старим runId не зупиняє новий запуск', () => {
+        it('pause со старым runId не останавливает новый запуск', () => {
             send({ type: 'start', runId: 1, settings, seed: 1 });
             send({ type: 'start', runId: 2, settings, seed: 2 });
             messages = [];
@@ -175,7 +175,7 @@ describe('MarketSimulation', () => {
             expect(statuses()).toEqual([]);
         });
 
-        it('resume зі старим runId не знімає з паузи новий запуск', () => {
+        it('resume со старым runId не снимает с паузы новый запуск', () => {
             send({ type: 'start', runId: 1, settings, seed: 1 });
             send({ type: 'start', runId: 2, settings, seed: 2 });
             send({ type: 'pause', runId: 2 });
@@ -189,8 +189,8 @@ describe('MarketSimulation', () => {
         });
     });
 
-    describe('помилки', () => {
-        it('якщо Wasm відхилив налаштування, повідомляє, які саме поля, і не генерує', () => {
+    describe('ошибки', () => {
+        it('если Wasm отклонил настройки, сообщает, какие именно поля, и не генерирует', () => {
             wasm.initResult = 2 | 4;
             send({ type: 'start', runId: 1, settings, seed: 1 });
             vi.advanceTimersByTime(5_000);
@@ -203,7 +203,7 @@ describe('MarketSimulation', () => {
             expect(wasm.batches).toBe(0);
         });
 
-        it('після відхиленого start resume не оживляє попередній запуск', () => {
+        it('после отклонённого start resume не оживляет предыдущий запуск', () => {
             send({ type: 'start', runId: 1, settings, seed: 1 });
             send({ type: 'pause', runId: 1 });
             wasm.initResult = 1;
@@ -217,7 +217,7 @@ describe('MarketSimulation', () => {
             expect(wasm.batches).toBe(0);
         });
 
-        it('dispose зупиняє генерацію і звільняє Wasm', () => {
+        it('dispose останавливает генерацию и освобождает Wasm', () => {
             send({ type: 'start', runId: 1, settings, seed: 1 });
             send({ type: 'dispose' });
             vi.advanceTimersByTime(5_000);
@@ -227,12 +227,12 @@ describe('MarketSimulation', () => {
         });
     });
 
-    describe('частота знімків', () => {
-        it('за замовчуванням не частіше ніж раз на 0,5 с, але враховує кожну угоду', () => {
+    describe('частота снимков', () => {
+        it('по умолчанию не чаще раза в 0,5 с, но учитывает каждую сделку', () => {
             send({ type: 'start', runId: 1, settings: fast, seed: 1 });
-            vi.advanceTimersByTime(2_000);              // 40 батчів
+            vi.advanceTimersByTime(2_000);              // 40 батчей
 
-            // Без урахування порожнього знімка на старті: по одному на кожне вікно 0,5 с.
+            // Без учёта пустого снимка на старте: по одному на каждое окно 0,5 с.
             expect(snapshots().length - 1).toBeLessThanOrEqual(5);
             expect(snapshots().length - 1).toBeGreaterThanOrEqual(4);
 
@@ -241,14 +241,14 @@ describe('MarketSimulation', () => {
             expect(lastVolume()).toBe(40 * TRADE_QUANTITY);
         });
 
-        it('наприкінці вікна надсилає найсвіжіші угоди, а не лише першу у вікні', () => {
+        it('в конце окна отправляет самые свежие сделки, а не только первую в окне', () => {
             send({ type: 'start', runId: 1, settings: fast, seed: 1 });
-            vi.advanceTimersByTime(560);                // перше вікно 0,5 с закрилось
+            vi.advanceTimersByTime(560);                // первое окно 0,5 с закрылось
 
             expect(lastVolume()).toBeGreaterThan(TRADE_QUANTITY);
         });
 
-        it('без обмеження надсилає знімок після кожного батча', () => {
+        it('без ограничения отправляет снимок после каждого батча', () => {
             send({ type: 'setRefresh', refreshMs: 0 });
             send({ type: 'start', runId: 1, settings: fast, seed: 1 });
             vi.advanceTimersByTime(500);
@@ -257,25 +257,25 @@ describe('MarketSimulation', () => {
             expect(lastVolume()).toBe(10 * TRADE_QUANTITY);
         });
 
-        it('нова частота діє без нового запуску і зберігається для наступного', () => {
+        it('новая частота действует без нового запуска и сохраняется для следующего', () => {
             send({ type: 'start', runId: 1, settings: fast, seed: 1 });
             send({ type: 'setRefresh', refreshMs: 5_000 });
             vi.advanceTimersByTime(4_000);
-            expect(snapshots(1)).toHaveLength(1 + 1);   // лише перший знімок вікна 5 с
+            expect(snapshots(1)).toHaveLength(1 + 1);   // только первый снимок окна 5 с
 
             send({ type: 'start', runId: 2, settings: fast, seed: 2 });
             vi.advanceTimersByTime(4_000);
             expect(snapshots(2)).toHaveLength(1 + 1);
         });
 
-        it('не надсилає знімок, якщо нових угод не було', () => {
+        it('не отправляет снимок, если новых сделок не было', () => {
             send({ type: 'start', runId: 1, settings: { ...settings, batchIntervalMs: 2_000 }, seed: 1 });
             vi.advanceTimersByTime(1_900);
 
             expect(snapshots()).toHaveLength(1);
         });
 
-        it('ігнорує некоректну частоту', () => {
+        it('игнорирует некорректную частоту', () => {
             send({ type: 'setRefresh', refreshMs: -5 });
             send({ type: 'setRefresh', refreshMs: 1.5 });
             send({ type: 'start', runId: 1, settings: fast, seed: 1 });
@@ -285,8 +285,8 @@ describe('MarketSimulation', () => {
         });
     });
 
-    describe('завантаження Wasm', () => {
-        it('команди до завершення завантаження не губляться і виконуються по порядку', async () => {
+    describe('загрузка Wasm', () => {
+        it('команды до окончания загрузки не теряются и выполняются по порядку', async () => {
             let resolve!: (value: WasmExports) => void;
             const fresh = new MarketSimulation((message) => messages.push(message));
             const loading = fresh.load(() => new Promise((r) => { resolve = r; }));
@@ -301,10 +301,10 @@ describe('MarketSimulation', () => {
             expect(wasm.initCalls).toHaveLength(1);
             expect(statuses()).toEqual(['running']);
             vi.advanceTimersByTime(1_000);
-            expect(snapshots()).toHaveLength(1 + 2);    // режим без обмеження застосовано до старту
+            expect(snapshots()).toHaveLength(1 + 2);    // режим без ограничения применён до старта
         });
 
-        it('помилка завантаження прив\'язується до запуску, що чекав, і повторюється для наступних', async () => {
+        it('ошибка загрузки привязывается к ждавшему запуску и повторяется для следующих', async () => {
             const failing = new MarketSimulation((message) => messages.push(message));
             const loading = failing.load(async () => { throw new Error('HTTP 404 while loading wasm/market_gen.wasm'); });
             failing.handle({ type: 'start', runId: 1, settings, seed: 1 });

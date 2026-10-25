@@ -39,7 +39,7 @@ describe('Settings', () => {
     await fixture.whenStable();
   });
 
-  it('показує налаштування активного запуску', () => {
+  it('показывает настройки активного запуска', () => {
     expect([input('instrumentCount').value, input('updatesPerBatch').value, input('batchIntervalMs').value])
       .toEqual(['5', '100', '500']);
   });
@@ -51,14 +51,14 @@ describe('Settings', () => {
     ['batchIntervalMs', '49', 'Enter a whole number from 50 to 2000.'],
     ['batchIntervalMs', '2001', 'Enter a whole number from 50 to 2000.'],
     ['updatesPerBatch', '2.5', 'Enter a whole number from 1 to 1000.'],
-  ])('%s = %s некоректне: показує помилку і блокує Apply', async (id, value, message) => {
+  ])('%s = %s некорректно: показывает ошибку и блокирует Apply', async (id, value, message) => {
     await type(id, value);
 
     expect(errorText()).toEqual([message]);
     expect(applyButton().disabled).toBe(true);
   });
 
-  it('приймає межі з ТЗ', async () => {
+  it('принимает границы из ТЗ', async () => {
     await type('instrumentCount', '50');
     await type('updatesPerBatch', '1');
     await type('batchIntervalMs', '2000');
@@ -67,14 +67,14 @@ describe('Settings', () => {
     expect(applyButton().disabled).toBe(false);
   });
 
-  it('редагування не впливає на запуск до Apply', async () => {
+  it('редактирование не влияет на запуск до Apply', async () => {
     await type('instrumentCount', '12');
 
     expect(session.settings().instrumentCount).toBe(5);
     expect(worker.sent).toHaveLength(1);
   });
 
-  it('Apply починає новий запуск з новими налаштуваннями і очищає значення', async () => {
+  it('Apply начинает новый запуск с новыми настройками и очищает значения', async () => {
     worker.emit({ type: 'snapshot', runId: 1, rows: [metricsRow('ALFA', { volume: 40 })] });
     await type('instrumentCount', '12');
     await type('batchIntervalMs', '250');
@@ -92,9 +92,9 @@ describe('Settings', () => {
     expect(element.querySelector('[role="status"]')!.textContent).toContain('New run started');
   });
 
-  it('з некоректними налаштуваннями Apply не запускає нічого', async () => {
+  it('с некорректными настройками Apply ничего не запускает', async () => {
     await type('instrumentCount', '0');
-    // Кнопка вимкнена, але форма може бути надіслана й іншим способом, наприклад Enter.
+    // Кнопка выключена, но форму можно отправить и другим способом, например Enter.
     element.querySelector('form')!.dispatchEvent(new Event('submit'));
     await fixture.whenStable();
 

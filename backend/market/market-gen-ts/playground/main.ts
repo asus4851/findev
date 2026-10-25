@@ -1,7 +1,7 @@
-// Пісочниця: запускає Wasm-генератор з ../market-gen-as і малює ціни вибраного інструмента.
-// Сторінка поводиться як майбутній воркер: перевіряє налаштування, викликає init у Wasm
-// і за таймером забирає батчі через nextBatch. Сам генератор повністю працює у Wasm.
-// Вісь X це номер угоди інструмента, а не реальний час: так видно кожну угоду окремо.
+// Песочница: запускает Wasm-генератор из ../market-gen-as и рисует цены выбранного инструмента.
+// Страница ведёт себя как воркер: проверяет настройки, вызывает init в Wasm
+// и по таймеру забирает батчи через nextBatch. Сам генератор полностью работает в Wasm.
+// Ось X — номер сделки инструмента, а не реальное время: так видна каждая сделка отдельно.
 import {
     createChart,
     LineSeries,
@@ -14,7 +14,7 @@ import { SimulationConfig, validateSimulationConfig } from '../src/config/simula
 import type { MarketUpdate } from '../src/model/market-update';
 import { WasmGenerator } from './wasm-generator';
 
-// Скільки останніх угод кожного інструмента тримати для графіка.
+// Сколько последних сделок каждого инструмента держать для графика.
 const HISTORY_LIMIT = 3_000;
 
 interface Point { n: number; price: number; bid: number; ask: number }
@@ -22,8 +22,8 @@ interface Point { n: number; price: number; bid: number; ask: number }
 interface InstrumentStats {
     trades: number;
     volume: number;
-    notional: number;   // Σ ціна × кількість, для VWAP
-    priceMoves: number; // скільки разів рівень вичерпано і ціна зсунулась
+    notional: number;   // Σ цена × количество, для VWAP
+    priceMoves: number; // сколько раз уровень исчерпан и цена сдвинулась
     last?: MarketUpdate;
     history: Point[];
 }
@@ -32,14 +32,14 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 const numberInput = (id: string) => Number($<HTMLInputElement>(id).value);
 const dollars = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
-// ── Графік ───────────────────────────────────────────────────────────
+// ── График ───────────────────────────────────────────────────────────
 
 const chart = createChart($('chart'), {
     autoSize: true,
     layout: { background: { color: '#ffffff' }, textColor: '#5d6673' },
     grid: { vertLines: { color: '#eef0f3' }, horzLines: { color: '#eef0f3' } },
     timeScale: { tickMarkFormatter: (time: Time) => `#${time}` },
-    localization: { timeFormatter: (time: Time) => `угода #${time}` },
+    localization: { timeFormatter: (time: Time) => `сделка #${time}` },
 });
 
 const priceFormat = { type: 'price' as const, precision: 2, minMove: 0.01 };
@@ -61,7 +61,7 @@ function append(series: ISeriesApi<'Line'>, time: number, cents: number): void {
     series.update({ time: time as UTCTimestamp, value: cents / 100 });
 }
 
-// ── Стан запуску ─────────────────────────────────────────────────────
+// ── Состояние запуска ────────────────────────────────────────────────
 
 let generator: WasmGenerator | undefined;
 let config: SimulationConfig | undefined;
@@ -100,23 +100,23 @@ function renderStats(): void {
         ? ((u.bidQuantity - u.askQuantity) / (u.bidQuantity + u.askQuantity)).toFixed(2)
         : '—';
     const items: [string, string][] = [
-        ['Статус', running ? 'працює' : 'на паузі'],
-        ['Угод', s ? String(s.trades) : '0'],
-        ['Остання ціна', u ? dollars(u.priceCents) : '—'],
+        ['Статус', running ? 'работает' : 'на паузе'],
+        ['Сделок', s ? String(s.trades) : '0'],
+        ['Последняя цена', u ? dollars(u.priceCents) : '—'],
         ['Спред', u ? dollars(u.askCents - u.bidCents) : '—'],
-        ['Обсяг', s ? String(s.volume) : '0'],
+        ['Объём', s ? String(s.volume) : '0'],
         ['VWAP', s && s.volume > 0 ? dollars(s.notional / s.volume) : '—'],
         ['Дисбаланс', imbalance],
-        ['Зсувів ціни', s ? String(s.priceMoves) : '0'],
+        ['Сдвигов цены', s ? String(s.priceMoves) : '0'],
     ];
     $('stats').innerHTML = items
         .map(([label, value]) => `<div class="stat"><span>${label}</span><b>${value}</b></div>`)
         .join('');
 }
 
-// ── Керування ────────────────────────────────────────────────────────
+// ── Управление ───────────────────────────────────────────────────────
 
-// Таймер живе тут, як у воркері: Wasm лише генерує батч на кожен виклик.
+// Таймер живёт здесь, как в воркере: Wasm лишь генерирует батч на каждый вызов.
 function startTimer(): void {
     const current = config!;
     timer = window.setInterval(() => onBatch(generator!.nextBatch()), current.batchIntervalMs);
@@ -137,7 +137,7 @@ function apply(): void {
         updatesPerBatch: numberInput('updatesPerBatch'),
         batchIntervalMs: numberInput('batchIntervalMs'),
     });
-    // Тексти помилок дає TypeScript-перевірка: Wasm повертає лише біти некоректних полів.
+    // Тексты ошибок даёт TypeScript-проверка: Wasm возвращает только биты некорректных полей.
     const errors = validateSimulationConfig(next);
     $('error').textContent = errors.map((e) => e.message).join('; ');
     if (errors.length > 0) return;
@@ -168,7 +168,7 @@ function togglePause(): void {
     if (running) {
         stopTimer();
     } else {
-        // Resume: стан квот лишився у Wasm, пропущений час не догенеровується.
+        // Resume: состояние котировок осталось в Wasm, пропущенное время не догенерируется.
         startTimer();
     }
     $('pause').textContent = running ? 'Pause' : 'Resume';
@@ -186,7 +186,7 @@ $<HTMLSelectElement>('instrument').addEventListener('change', (event) => {
     renderStats();
 });
 
-// Завантажуємо Wasm і стартуємо з налаштуваннями за замовчуванням.
+// Загружаем Wasm и стартуем с настройками по умолчанию.
 WasmGenerator.load()
     .then((loaded) => {
         generator = loaded;

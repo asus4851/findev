@@ -25,13 +25,13 @@ describe('Dashboard', () => {
     await fixture.whenStable();
   });
 
-  it('до перших даних показує очікування і вимкнену кнопку', () => {
+  it('до первых данных показывает ожидание и выключенную кнопку', () => {
     expect(cells()).toEqual([['Waiting for the market data…']]);
     expect(button().disabled).toBe(true);
     expect(element.querySelector('.badge')!.textContent).toContain('Starting');
   });
 
-  it('до першої угоди показує недоступні значення і нульовий обсяг', async () => {
+  it('до первой сделки показывает недоступные значения и нулевой объём', async () => {
     worker.emit({ type: 'snapshot', runId: 1, rows: [metricsRow('ALFA'), metricsRow('BETA')] });
     await fixture.whenStable();
 
@@ -41,7 +41,7 @@ describe('Dashboard', () => {
     ]);
   });
 
-  it('показує метрики прикладу з ТЗ у форматі валюти і дисбалансу', async () => {
+  it('показывает метрики примера из ТЗ в формате валюты и дисбаланса', async () => {
     worker.emit({
       type: 'snapshot',
       runId: 1,
@@ -52,7 +52,7 @@ describe('Dashboard', () => {
     expect(cells()).toEqual([['ALFA', '$102.00', '$0.04', '40', '$101.50', '+0.20']]);
   });
 
-  it('Pause і Resume керують запуском і показують статус', async () => {
+  it('Pause и Resume управляют запуском и показывают статус', async () => {
     worker.emit({ type: 'status', runId: 1, status: 'running' });
     await fixture.whenStable();
     expect(button().textContent).toContain('Pause');
@@ -69,7 +69,7 @@ describe('Dashboard', () => {
     expect(worker.sent.at(-1)).toEqual({ type: 'resume', runId: 1 });
   });
 
-  it('показує помилку ініціалізації', async () => {
+  it('показывает ошибку инициализации', async () => {
     worker.emit({ type: 'error', runId: 1, message: 'Cannot initialize the market generator: HTTP 404' });
     await fixture.whenStable();
 

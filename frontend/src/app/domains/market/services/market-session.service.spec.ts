@@ -20,7 +20,7 @@ describe('MarketSession', () => {
   });
 
   describe('старт', () => {
-    it('запускає воркер з налаштуваннями за замовчуванням', () => {
+    it('запускает воркер с настройками по умолчанию', () => {
       session.start();
 
       expect(worker.sent).toEqual([
@@ -30,7 +30,7 @@ describe('MarketSession', () => {
       expect(session.settings()).toEqual(defaults);
     });
 
-    it('повторний старт не створює другого воркера і другого запуску', () => {
+    it('повторный старт не создаёт второго воркера и второго запуска', () => {
       session.start();
       session.start();
 
@@ -39,10 +39,10 @@ describe('MarketSession', () => {
     });
   });
 
-  describe('дані з воркера', () => {
+  describe('данные из воркера', () => {
     beforeEach(() => session.start());
 
-    it('показує знімок і статус поточного запуску', () => {
+    it('показывает снимок и статус текущего запуска', () => {
       worker.emit({ type: 'snapshot', runId: 1, rows: [metricsRow('ALFA', { volume: 40 })] });
       worker.emit({ type: 'status', runId: 1, status: 'running' });
 
@@ -50,7 +50,7 @@ describe('MarketSession', () => {
       expect(session.state()).toBe('running');
     });
 
-    it('показує помилку ініціалізації', () => {
+    it('показывает ошибку инициализации', () => {
       worker.emit({ type: 'error', runId: 1, message: 'Cannot initialize the market generator: HTTP 404' });
 
       expect(session.state()).toBe('error');
@@ -65,7 +65,7 @@ describe('MarketSession', () => {
       worker.emit({ type: 'status', runId: 1, status: 'running' });
     });
 
-    it('починає новий запуск з новими налаштуваннями і очищає значення попереднього', () => {
+    it('начинает новый запуск с новыми настройками и очищает значения предыдущего', () => {
       const next = { instrumentCount: 3, updatesPerBatch: 50, batchIntervalMs: 200 };
       session.apply(next);
 
@@ -76,7 +76,7 @@ describe('MarketSession', () => {
       expect(workersCreated).toBe(1);
     });
 
-    it('стартує новий запуск і тоді, коли попередній був на паузі', () => {
+    it('стартует новый запуск и тогда, когда предыдущий был на паузе', () => {
       session.pause();
       worker.emit({ type: 'status', runId: 1, status: 'paused' });
 
@@ -85,10 +85,10 @@ describe('MarketSession', () => {
       expect(worker.sent.at(-1)).toMatchObject({ type: 'start', runId: 2 });
     });
 
-    it('відкидає результати попереднього запуску', () => {
+    it('отбрасывает результаты предыдущего запуска', () => {
       session.apply(defaults);
 
-      // Повідомлення старого запуску ще були в черзі воркера.
+      // Сообщения старого запуска ещё были в очереди воркера.
       worker.emit({ type: 'snapshot', runId: 1, rows: [metricsRow('ALFA', { volume: 999 })] });
       worker.emit({ type: 'status', runId: 1, status: 'paused' });
       worker.emit({ type: 'error', runId: 1, message: 'stale' });
@@ -101,7 +101,7 @@ describe('MarketSession', () => {
       expect(session.rows()).toEqual([metricsRow('ALFA')]);
     });
 
-    it('копіює налаштування, тож зміни переданого об\'єкта не впливають на запуск', () => {
+    it('копирует настройки, поэтому изменения переданного объекта не влияют на запуск', () => {
       const next = { ...defaults };
       session.apply(next);
       next.instrumentCount = 50;
@@ -110,15 +110,15 @@ describe('MarketSession', () => {
     });
   });
 
-  describe('Pause і Resume', () => {
+  describe('Pause и Resume', () => {
     beforeEach(() => session.start());
 
-    it('надсилають команду поточного запуску лише у відповідному стані', () => {
-      session.pause(); // ще starting: нічого
+    it('отправляют команду текущего запуска только в соответствующем состоянии', () => {
+      session.pause(); // ещё starting: ничего
       expect(worker.sent).toHaveLength(1);
 
       worker.emit({ type: 'status', runId: 1, status: 'running' });
-      session.resume(); // не на паузі: нічого
+      session.resume(); // не на паузе: ничего
       session.pause();
       expect(worker.sent.at(-1)).toEqual({ type: 'pause', runId: 1 });
 
@@ -128,7 +128,7 @@ describe('MarketSession', () => {
       expect(worker.sent).toHaveLength(3);
     });
 
-    it('пауза не очищає значення', () => {
+    it('пауза не очищает значения', () => {
       worker.emit({ type: 'status', runId: 1, status: 'running' });
       worker.emit({ type: 'snapshot', runId: 1, rows: [metricsRow('ALFA', { volume: 40 })] });
       session.pause();
@@ -139,8 +139,8 @@ describe('MarketSession', () => {
     });
   });
 
-  describe('помилки і звільнення ресурсів', () => {
-    it('показує зрозумілу помилку, якщо воркер не вдалося створити', () => {
+  describe('ошибки и освобождение ресурсов', () => {
+    it('показывает понятную ошибку, если воркер не удалось создать', () => {
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
         providers: [{ provide: MARKET_WORKER_FACTORY, useValue: () => { throw new Error('Workers are not supported'); } }],
@@ -153,7 +153,7 @@ describe('MarketSession', () => {
       expect(failing.error()).toBe('Cannot start the market worker: Workers are not supported');
     });
 
-    it('показує помилку, якщо воркер упав', () => {
+    it('показывает ошибку, если воркер упал', () => {
       session.start();
       worker.onerror?.({ message: 'Script error' } as ErrorEvent);
 
@@ -161,7 +161,7 @@ describe('MarketSession', () => {
       expect(session.error()).toBe('Market worker failed: Script error');
     });
 
-    it('звільняє воркер, коли застосунок знищується', () => {
+    it('освобождает воркер, когда приложение уничтожается', () => {
       session.start();
       TestBed.resetTestingModule();
 

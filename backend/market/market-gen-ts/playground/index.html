@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="uk">
+<html lang="ru">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -37,17 +37,17 @@
 </head>
 <body>
     <h1>Market Simulator Playground</h1>
-    <p class="note">Локальна пісочниця для перегляду поведінки цін. Генератор працює у Wasm, зібраному з <code>../market-gen-as</code>. Не частина застосунку.</p>
+    <p class="note">Локальная песочница для просмотра поведения цен. Генератор работает в Wasm, собранном из <code>../market-gen-as</code>. Не часть приложения.</p>
 
     <section class="panel">
         <form id="config">
             <label>Seed <input id="seed" type="number" value="42" /></label>
-            <label>Інструментів <input id="instrumentCount" type="number" value="5" /></label>
-            <label>Угод у батчі <input id="updatesPerBatch" type="number" value="100" /></label>
-            <label>Інтервал, мс <input id="batchIntervalMs" type="number" value="500" /></label>
+            <label>Инструментов <input id="instrumentCount" type="number" value="5" /></label>
+            <label>Сделок в батче <input id="updatesPerBatch" type="number" value="100" /></label>
+            <label>Интервал, мс <input id="batchIntervalMs" type="number" value="500" /></label>
             <button class="primary" type="submit">Apply</button>
             <button id="pause" type="button">Pause</button>
-            <label>Інструмент на графіку <select id="instrument"></select></label>
+            <label>Инструмент на графике <select id="instrument"></select></label>
         </form>
         <p id="error"></p>
     </section>
@@ -56,7 +56,7 @@
         <div class="legend">
             <span><i style="background:#d64545"></i>Ask</span>
             <span><i style="background:#2e9e5b"></i>Bid</span>
-            <span><i style="background:#1f5fbf"></i>Ціна угоди</span>
+            <span><i style="background:#1f5fbf"></i>Цена сделки</span>
         </div>
         <div id="chart"></div>
     </section>

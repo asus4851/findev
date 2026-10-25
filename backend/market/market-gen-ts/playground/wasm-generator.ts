@@ -1,10 +1,10 @@
-// Адаптер до Wasm-генератора з ../../market-gen-as.
-// Завантажує .wasm, викликає його функції і перетворює плоский буфер чисел на оновлення.
-// Такий самий адаптер знадобиться у воркері застосунку.
+// Адаптер к Wasm-генератору из ../../market-gen-as.
+// Загружает .wasm, вызывает его функции и превращает плоский буфер чисел в обновления.
+// Похожий адаптер используется в воркере приложения.
 import wasmUrl from '../../market-gen-as/build/market_gen.wasm?url';
 import type { MarketUpdate } from '../src/model/market-update';
 
-// Функції, які експортує assembly/index.ts.
+// Функции, которые экспортирует assembly/index.ts.
 interface WasmExports {
     memory: WebAssembly.Memory;
     FIELDS: WebAssembly.Global;
@@ -21,8 +21,8 @@ export class WasmGenerator {
         this.fields = wasm.FIELDS.value as number;
     }
 
-    // Завантажує і компілює модуль. Кидає зрозумілу помилку, якщо файл недоступний
-    // або браузер не може його виконати: ТЗ вимагає змістовних помилок ініціалізації.
+    // Загружает и компилирует модуль. Бросает понятную ошибку, если файл недоступен
+    // или браузер не может его выполнить: ТЗ требует содержательных ошибок инициализации.
     static async load(): Promise<WasmGenerator> {
         const response = await fetch(wasmUrl);
         if (!response.ok) {
@@ -32,16 +32,16 @@ export class WasmGenerator {
         return new WasmGenerator(instance.exports as unknown as WasmExports);
     }
 
-    // Новий запуск: Wasm скидає весь попередній стан.
-    // Повертає біти некоректних полів, 0 означає успіх.
+    // Новый запуск: Wasm сбрасывает всё предыдущее состояние.
+    // Возвращает биты некорректных полей, 0 означает успех.
     init(instrumentCount: number, updatesPerBatch: number, batchIntervalMs: number, seed: number): number {
         const errors = this.wasm.init(instrumentCount, updatesPerBatch, batchIntervalMs, seed >>> 0);
         if (errors === 0) this.updatesPerBatch = updatesPerBatch;
         return errors;
     }
 
-    // Генерує батч у Wasm і одразу копіює його з буфера в об'єкти:
-    // буфер перезапишеться наступним викликом.
+    // Генерирует батч в Wasm и сразу копирует его из буфера в объекты:
+    // буфер перезапишется следующим вызовом.
     nextBatch(): MarketUpdate[] {
         const pointer = this.wasm.nextBatch();
         if (pointer === 0) return [];
