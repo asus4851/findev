@@ -64,7 +64,7 @@ frontend/src/app/
 ├── shared/components/           data-table: универсальная таблица
 └── domains/market/              фронтенд-домен «рынок», публичный API — index.ts
     ├── pages/                   dashboard, settings
-    ├── services/                market-session: связь с воркером и состояние запуска
+    ├── services/                market-api (клиент бэкенда: воркер и postMessage), market-session (состояние запуска)
     ├── tokens/                  токен создания воркера
     ├── utils/                   пайпы формата цены и дисбаланса
     └── market.model.ts          модель: метрики и настройки
