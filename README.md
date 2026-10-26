@@ -116,4 +116,4 @@ cd frontend && npm test                              # сервис, стран�
 
 ## Деплой
 
-Каждый push в `main` запускает [GitHub Actions](.github/workflows/deploy.yml): линт, все тесты, сборка с `--base-href /<имя-репозитория>/` и публикация на GitHub Pages. Если линт или тест падает, деплой не происходит. В настройках репозитория (**Settings → Pages**) источником выбран **GitHub Actions**.
+Каждый push в `main` запускает один процесс [GitHub Actions](.github/workflows/ci.yml): сборка с `--base-href /<имя-репозитория>/`, затем линт и все тесты, затем публикация на GitHub Pages. Если сборка, линт или тест падает, деплой не происходит. На pull request выполняются сборка и проверки, без публикации. В настройках репозитория (**Settings → Pages**) источником выбран **GitHub Actions**.

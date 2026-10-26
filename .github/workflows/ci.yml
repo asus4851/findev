@@ -1,7 +1,8 @@
 name: CI
 
-# Линт и тесты запускаются на каждом pull request и на push в main.
-# Деплой (deploy.yml) стартует только после успешного прогона на push в main.
+# Один процесс: сборка → линт и тесты → публикация на GitHub Pages.
+# На pull request выполняются сборка и проверки, без публикации.
+# Если сборка, линт или хотя бы один тест падает, деплой не происходит.
 on:
   pull_request:
   push:
@@ -11,14 +12,52 @@ on:
 permissions:
   contents: read
 
-# Новый коммит в той же ветке отменяет предыдущий запуск.
+# Новый коммит в той же ветке отменяет предыдущий запуск, в том числе незавершённую публикацию.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/market/market-gen-as/package-lock.json
+            backend/market/worker/package-lock.json
+            frontend/package-lock.json
+
+      # Wasm собирается из AssemblyScript во время prebuild фронтенда, а воркер импортирует rxjs
+      # из своей папки, поэтому зависимости нужны в каждом пакете, который попадает в сборку.
+      - run: npm ci
+        working-directory: backend/market/market-gen-as
+      - run: npm ci
+        working-directory: backend/market/worker
+      - run: npm ci
+        working-directory: frontend
+
+      # На Pages сайт живёт по адресу /<имя-репозитория>/, поэтому base href берётся из имени репозитория.
+      - run: npm run build -- --base-href /${{ github.event.repository.name }}/
+        working-directory: frontend
+
+      # Pages не знает о маршрутах Angular: при прямом переходе на /settings отдаёт 404.html,
+      # поэтому копия index.html заставляет приложение загрузиться и самому обработать адрес.
+      - run: cp index.html 404.html
+        working-directory: frontend/dist/frontend/browser
+
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
+        with:
+          path: frontend/dist/frontend/browser
+
   # Границы доменов: импорт только через публичные index.ts.
   lint:
+    needs: build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -35,6 +74,7 @@ jobs:
         run: npm run lint
 
   test-ts-generator:
+    needs: build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -51,6 +91,7 @@ jobs:
         run: npm test
 
   test-wasm-generator:
+    needs: build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -67,6 +108,7 @@ jobs:
         run: npm test
 
   test-worker:
+    needs: build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -83,6 +125,7 @@ jobs:
         run: npm test
 
   test-frontend:
+    needs: build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -97,3 +140,17 @@ jobs:
       - run: npm ci
       - name: Test Angular
         run: npm test -- --watch=false
+
+  deploy:
+    needs: [build, lint, test-ts-generator, test-wasm-generator, test-worker, test-frontend]
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
