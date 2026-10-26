@@ -1,9 +1,12 @@
 name: Deploy to GitHub Pages
 
-# Каждый push в main проверяет код (линт, тесты), собирает приложение и публикует его на GitHub Pages.
-# Если линт или хотя бы один тест падает, деплой не происходит.
+# Запускается после завершения CI (ci.yml) на push в main: собирает приложение и публикует его на GitHub Pages.
+# Если линт или хотя бы один тест в CI упал, деплой не происходит.
+# Ручной запуск (workflow_dispatch) публикует текущий main без ожидания CI.
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -19,9 +22,16 @@ concurrency:
 
 jobs:
   build:
+    # Только успешный CI именно на push (а не на pull request из ветки с именем main).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
     steps:
+      # Собирается ровно тот коммит, который проверил CI, даже если в main уже успели запушить новый.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - uses: actions/setup-node@v4
         with:
@@ -29,37 +39,16 @@ jobs:
           cache: npm
           cache-dependency-path: |
             backend/market/market-gen-as/package-lock.json
-            backend/market/market-gen-ts/package-lock.json
             backend/market/worker/package-lock.json
             frontend/package-lock.json
 
       # Wasm собирается из AssemblyScript во время prebuild фронтенда, а воркер импортирует rxjs
-      # из своей папки, поэтому зависимости нужны в каждом пакете.
+      # из своей папки, поэтому зависимости нужны в каждом пакете, который попадает в сборку.
       - run: npm ci
         working-directory: backend/market/market-gen-as
       - run: npm ci
-        working-directory: backend/market/market-gen-ts
-      - run: npm ci
         working-directory: backend/market/worker
       - run: npm ci
-        working-directory: frontend
-
-      # Границы доменов: импорт только через публичные index.ts.
-      - name: Lint
-        run: npm run lint
-        working-directory: frontend
-
-      - name: Test Wasm generator
-        run: npm test
-        working-directory: backend/market/market-gen-as
-      - name: Test TypeScript generator
-        run: npm test
-        working-directory: backend/market/market-gen-ts
-      - name: Test worker and contracts
-        run: npm test
-        working-directory: backend/market/worker
-      - name: Test Angular
-        run: npm test -- --watch=false
         working-directory: frontend
 
       # На Pages сайт живёт по адресу /<имя-репозитория>/, поэтому base href берётся из имени репозитория.

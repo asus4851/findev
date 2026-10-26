@@ -1,6 +1,7 @@
 name: CI
 
-# Тесты запускаются на каждом pull request и на push в main, до мерджа и деплоя.
+# Линт и тесты запускаются на каждом pull request и на push в main.
+# Деплой (deploy.yml) стартует только после успешного прогона на push в main.
 on:
   pull_request:
   push:
@@ -16,6 +17,39 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Границы доменов: импорт только через публичные index.ts.
+  lint:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+
+  test-ts-generator:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/market/market-gen-ts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/market/market-gen-ts/package-lock.json
+      - run: npm ci
+      - name: Test TypeScript generator
+        run: npm test
+
   test-wasm-generator:
     runs-on: ubuntu-latest
     defaults:
