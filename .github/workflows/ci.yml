@@ -1,0 +1,65 @@
+name: CI
+
+# Тесты запускаются на каждом pull request и на push в main, до мерджа и деплоя.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Новый коммит в той же ветке отменяет предыдущий запуск.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-wasm-generator:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/market/market-gen-as
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/market/market-gen-as/package-lock.json
+      - run: npm ci
+      - name: Test Wasm generator
+        run: npm test
+
+  test-worker:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/market/worker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/market/worker/package-lock.json
+      - run: npm ci
+      - name: Test worker and contracts
+        run: npm test
+
+  test-frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Test Angular
+        run: npm test -- --watch=false
